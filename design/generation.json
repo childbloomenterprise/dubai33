@@ -1,0 +1,27 @@
+{
+  "generated_at": "2026-10-10",
+  "tool": "OpenAI built-in image generation",
+  "reference_inputs": [],
+  "assets": [
+    {
+      "file": "raw/munnar.png",
+      "original": "C:/Users/vaish/.codex/generated_images/01a126d7-fc23-7821-9ea5-770ee7f1541d/exec-95dcd757-c117-4326-b5bd-7bb2277385bf.png",
+      "prompt": "Use case: photorealistic-natural. Asset type: wide landscape photograph for premium travel companion journey card. Primary request: Munnar, Kerala emerald tea plantations with layered Western Ghats at warm dawn and atmospheric mist. Scene/backdrop: authentic undulating tea fields on steep hillsides, distant blue-green mountain ridgelines, delicate valley mist, warm peach dawn sky. Style/medium: premium travel editorial photography, realistic natural texture, cinematic but understated color, no oversaturation. Composition/framing: wide horizontal 16:9 panorama; lush foreground tea rows sweeping into distant layered mountains; pleasing depth; lower-left darker green area suitable for white interface text overlay added separately by app. Lighting/mood: soft warm early morning sunlight, peaceful inviting atmosphere. Constraints: image only, no text, no logos, no UI, no watermark, no people, no buildings."
+    },
+    {
+      "file": "raw/appam.png",
+      "original": "C:/Users/vaish/.codex/generated_images/01a126d8-1698-7dd2-aacb-e37edecde62e/exec-6b915d47-f1ae-47f4-9e09-c2714241a8e7.png",
+      "prompt": "Use case: photorealistic-natural. Asset type: landscape thumbnail for premium Kerala travel food discovery card. Primary request: editorial close-up photograph of traditional Kerala appam with vegetable stew. Subject: white lacy-edged appam with soft fluffy center on a matte ceramic plate beside a small bowl of creamy coconut vegetable stew with subtle carrot and green beans. Scene: warm wood table with small banana leaf accent. Composition: landscape 3:2, appetizing close-up, food centered and clearly identifiable at small card size, gently angled overhead camera. Lighting: natural warm morning light, realistic textures and restrained premium styling. Constraints: food photography only; no people, text, logos, watermark, interface, plastic appearance."
+    },
+    {
+      "file": "raw/fish-curry.png",
+      "original": "C:/Users/vaish/.codex/generated_images/01a126d8-1698-7dd2-aacb-e37edecde62e/exec-dd701d93-6655-4a00-a998-db78c1eb8f86.png",
+      "prompt": "Use case: photorealistic-natural. Asset type: landscape thumbnail for premium Kerala travel food discovery card. Primary request: editorial close-up photograph of traditional Kerala fish curry. Subject: chunky fish pieces in rich red-orange curry with curry leaves and gentle oil sheen, served in a rustic earthenware bowl. Scene: warm wood table with banana leaf accent. Composition: landscape 3:2, appetizing close-up, bowl centered and clearly identifiable at small card size, gently angled overhead camera. Lighting: natural warm morning light, realistic food textures and restrained premium styling matching regional food editorial photography. Constraints: food photography only; no people, text, logos, watermark, interface, plastic appearance."
+    },
+    {
+      "file": "raw/puttu.png",
+      "original": "C:/Users/vaish/.codex/generated_images/01a126d8-1698-7dd2-aacb-e37edecde62e/exec-6a6a159c-df7b-44cc-a8aa-fb902bb71139.png",
+      "prompt": "Use case: photorealistic-natural. Asset type: landscape thumbnail for premium Kerala travel food discovery card. Primary request: editorial close-up photograph of traditional Kerala puttu and kadala curry. Subject: two short white cylindrical steamed rice and grated coconut puttu portions lying on a banana leaf beside a small rustic ceramic bowl of dark brown black chickpea kadala curry with curry leaves. Scene: warm wood table. Composition: landscape 3:2, appetizing close-up, food centered and clearly identifiable at small card size, gently angled overhead camera. Lighting: natural warm morning light, realistic crumbly rice and coconut texture and restrained premium styling matching regional food editorial photography. Constraints: food photography only; no people, text, logos, watermark, interface, plastic appearance."
+    }
+  ]
+}

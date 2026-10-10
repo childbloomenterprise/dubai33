@@ -1,0 +1,202 @@
+{
+  "tested_at": "2026-10-10T20:10:34.845Z",
+  "base": "https://linc-33.vercel.app",
+  "results": [
+    {
+      "path": "/",
+      "status": 200,
+      "cache": "public, max-age=0, must-revalidate"
+    },
+    {
+      "path": "/journey",
+      "status": 200,
+      "cache": "public, max-age=0, must-revalidate"
+    },
+    {
+      "path": "/privacy",
+      "status": 200,
+      "cache": "public, max-age=0, must-revalidate"
+    },
+    {
+      "path": "/terms",
+      "status": 200,
+      "cache": "public, max-age=0, must-revalidate"
+    },
+    {
+      "path": "/sw.js",
+      "status": 200,
+      "cache": "public, max-age=0, must-revalidate"
+    },
+    {
+      "path": "/manifest.webmanifest",
+      "status": 200,
+      "cache": "public, max-age=0, must-revalidate",
+      "body": {
+        "name": "LINC-33 — Your journey, connected",
+        "short_name": "LINC-33",
+        "description": "A little company along the way. Travel, remember and feel at home.",
+        "start_url": "/",
+        "scope": "/",
+        "display": "standalone",
+        "background_color": "#0b1420",
+        "theme_color": "#0b1420",
+        "icons": [
+          {
+            "src": "/icons/icon-192.png",
+            "sizes": "192x192",
+            "type": "image/png"
+          },
+          {
+            "src": "/icons/icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any"
+          }
+        ]
+      }
+    },
+    {
+      "path": "/icons/icon-192.png",
+      "status": 200,
+      "cache": "public, max-age=0, must-revalidate"
+    },
+    {
+      "path": "/images/munnar.webp",
+      "status": 200,
+      "cache": "public, max-age=0, must-revalidate"
+    },
+    {
+      "path": "/api/status",
+      "status": 200,
+      "cache": "no-store",
+      "body": {
+        "auth": false,
+        "ai": false,
+        "private_ai": false,
+        "nearby": false,
+        "account_deletion": false
+      }
+    },
+    {
+      "path": "/api/events",
+      "status": 401,
+      "cache": "no-store",
+      "body": {
+        "error": {
+          "code": "SIGN_IN_REQUIRED",
+          "message": "Sign in to continue."
+        }
+      }
+    },
+    {
+      "path": "/api/journeys",
+      "status": 401,
+      "cache": "no-store",
+      "body": {
+        "error": {
+          "code": "SIGN_IN_REQUIRED",
+          "message": "Sign in to continue."
+        }
+      }
+    },
+    {
+      "path": "/api/health-context",
+      "status": 401,
+      "cache": "no-store",
+      "body": {
+        "error": {
+          "code": "SIGN_IN_REQUIRED",
+          "message": "Sign in to continue."
+        }
+      }
+    },
+    {
+      "path": "/api/conversations",
+      "status": 401,
+      "cache": "no-store",
+      "body": {
+        "error": {
+          "code": "SIGN_IN_REQUIRED",
+          "message": "Sign in to continue."
+        }
+      }
+    },
+    {
+      "path": "/api/nearby",
+      "status": 401,
+      "cache": "no-store",
+      "body": {
+        "error": {
+          "code": "SIGN_IN_REQUIRED",
+          "message": "Sign in to continue."
+        }
+      }
+    },
+    {
+      "path": "/api/chat",
+      "status": 405,
+      "cache": "no-store",
+      "body": {
+        "error": {
+          "code": "METHOD_NOT_ALLOWED",
+          "message": "This action is unavailable."
+        }
+      }
+    },
+    {
+      "path": "/api/transcribe",
+      "status": 405,
+      "cache": "no-store",
+      "body": {
+        "error": {
+          "code": "METHOD_NOT_ALLOWED",
+          "message": "This action is unavailable."
+        }
+      }
+    },
+    {
+      "path": "/api/privacy",
+      "status": 405,
+      "cache": "no-store",
+      "body": {
+        "error": {
+          "code": "METHOD_NOT_ALLOWED",
+          "message": "This action is unavailable."
+        }
+      }
+    },
+    {
+      "path": "/api/chat",
+      "method": "POST",
+      "status": 401,
+      "body": {
+        "error": {
+          "code": "SIGN_IN_REQUIRED",
+          "message": "Sign in to continue."
+        }
+      }
+    },
+    {
+      "path": "/api/transcribe",
+      "method": "POST",
+      "status": 401,
+      "body": {
+        "error": {
+          "code": "SIGN_IN_REQUIRED",
+          "message": "Sign in to continue."
+        }
+      }
+    },
+    {
+      "path": "/api/privacy",
+      "method": "POST",
+      "status": 401,
+      "body": {
+        "error": {
+          "code": "SIGN_IN_REQUIRED",
+          "message": "Sign in to continue."
+        }
+      }
+    }
+  ]
+}
