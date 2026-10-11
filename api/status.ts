@@ -7,7 +7,7 @@ export default function status(_req: VercelRequest, res: VercelResponse) {
       (process.env.SUPABASE_PUBLISHABLE_KEY ||
         process.env.VITE_SUPABASE_PUBLISHABLE_KEY)
     ),
-    ai: !!process.env.GEMINI_API_KEY,
+    ai: !!(process.env.GEMINI_API_KEY || process.env.OPENROUTER_API_KEY),
     private_ai:
       !!process.env.GEMINI_API_KEY &&
       process.env.GEMINI_SENSITIVE_PROCESSING_ENABLED === "true",

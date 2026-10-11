@@ -2,6 +2,7 @@ import { GoogleGenAI } from "@google/genai";
 import { z } from "zod";
 import { extractionSchema, eventDraft } from "../shared/contracts.js";
 import { ApiError } from "./http.js";
+import { isSensitiveText } from "../shared/safety.js";
 
 export function aiClient() {
   if (!process.env.GEMINI_API_KEY)
@@ -12,7 +13,60 @@ export function aiClient() {
     );
   return new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 }
-export const modelName = () => process.env.GEMINI_MODEL || "gemini-3.8-flash";
+export const modelName = () => process.env.GEMINI_MODEL || "gemini-2.5-flash";
+/** Text fallback only. Audio and private extraction retain their provider gates. */
+function textClient(allowRouter: boolean) {
+  return {
+    models: {
+      async generateContent(
+        input: Parameters<GoogleGenAI["models"]["generateContent"]>[0],
+      ) {
+        if (process.env.GEMINI_API_KEY) {
+          try {
+            return await aiClient().models.generateContent(input);
+          } catch (error) {
+            if (!allowRouter || !process.env.OPENROUTER_API_KEY) throw error;
+          }
+        }
+        if (!allowRouter || !process.env.OPENROUTER_API_KEY)
+          return aiClient().models.generateContent(input);
+        const response = await fetch(
+          "https://openrouter.ai/api/v1/chat/completions",
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
+              "Content-Type": "application/json",
+            },
+            signal: AbortSignal.timeout(20000),
+            body: JSON.stringify({
+              model: process.env.OPENROUTER_MODEL || "google/gemini-2.5-flash",
+              messages: [
+                { role: "system", content: input.config?.systemInstruction },
+                { role: "user", content: input.contents },
+              ],
+              response_format: {
+                type: "json_schema",
+                json_schema: {
+                  name: "travel_reply",
+                  schema: input.config?.responseJsonSchema,
+                },
+              },
+              provider: { require_parameters: true, data_collection: "deny" },
+              max_tokens: input.config?.maxOutputTokens || 900,
+            }),
+          },
+        );
+        if (!response.ok) throw new Error("AI provider request failed");
+        const result = await response.json();
+        const text = result.choices?.[0]?.message?.content;
+        if (typeof text !== "string")
+          throw new Error("AI provider response missing");
+        return { text };
+      },
+    },
+  };
+}
 export function allowSensitiveAI() {
   if (process.env.GEMINI_SENSITIVE_PROCESSING_ENABLED !== "true")
     throw new ApiError(
@@ -25,14 +79,18 @@ export async function extractAndReply(
   text: string,
   context: {
     destination: string | null;
-    journey: { title: string; started_at: string; ended_at: string | null } | null;
+    journey: {
+      title: string;
+      started_at: string;
+      ended_at: string | null;
+    } | null;
     timezone: string;
     now: string;
     recent: unknown[];
     messages: unknown[];
   },
 ) {
-  const ai = aiClient();
+  const ai = textClient(!isSensitiveText(text));
   try {
     const response = await ai.models.generateContent({
       model: modelName(),

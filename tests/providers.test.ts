@@ -29,6 +29,83 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 describe("voice/provider boundaries", () => {
+  it("never sends sensitive messages to the text fallback", async () => {
+    vi.stubEnv("GEMINI_API_KEY", "");
+    vi.stubEnv("OPENROUTER_API_KEY", "test-router-secret");
+    const fetcher = vi.fn();
+    vi.stubGlobal("fetch", fetcher);
+    await expect(
+      extractAndReply("I took medication today", {
+        destination: null,
+        journey: null,
+        timezone: "Asia/Kolkata",
+        now: new Date().toISOString(),
+        recent: [],
+        messages: [],
+      }),
+    ).rejects.toThrow();
+    expect(fetcher).not.toHaveBeenCalled();
+  });
+  it("uses server-side OpenRouter when Gemini is unavailable", async () => {
+    vi.stubEnv("GEMINI_API_KEY", "");
+    vi.stubEnv("OPENROUTER_API_KEY", "test-router-secret");
+    const fetcher = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          choices: [
+            {
+              message: {
+                content: JSON.stringify({
+                  reply: "Explore the tea gardens.",
+                  intent: "travel",
+                  events: [],
+                  actions: [],
+                }),
+              },
+            },
+          ],
+        }),
+      ),
+    );
+    vi.stubGlobal("fetch", fetcher);
+    const result = await extractAndReply("What can I visit?", {
+      destination: "Munnar",
+      journey: null,
+      timezone: "Asia/Kolkata",
+      now: new Date().toISOString(),
+      recent: [],
+      messages: [],
+    });
+    expect(result.reply).toBe("Explore the tea gardens.");
+    const payload = JSON.parse(fetcher.mock.calls[0][1].body);
+    expect(payload.provider.data_collection).toBe("deny");
+    expect(payload.response_format.type).toBe("json_schema");
+    expect(generate).not.toHaveBeenCalled();
+  });
+  it("falls back after Gemini failure and rejects malformed fallback output", async () => {
+    vi.stubEnv("OPENROUTER_API_KEY", "test-router-secret");
+    generate.mockRejectedValue(new Error("provider unavailable"));
+    vi.stubGlobal(
+      "fetch",
+      vi
+        .fn()
+        .mockResolvedValue(
+          new Response(
+            JSON.stringify({ choices: [{ message: { content: "{}" } }] }),
+          ),
+        ),
+    );
+    await expect(
+      extractAndReply("Hello", {
+        destination: null,
+        journey: null,
+        timezone: "Asia/Kolkata",
+        now: new Date().toISOString(),
+        recent: [],
+        messages: [],
+      }),
+    ).rejects.toThrow("nothing has been marked as saved");
+  });
   it("fails visibly without an AI key", () => {
     vi.stubEnv("GEMINI_API_KEY", "");
     expect(aiClient).toThrow("not connected");
