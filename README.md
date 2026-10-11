@@ -35,7 +35,8 @@ Configure secrets in `.env.local` and Vercel Project Settings → Environment Va
 | `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY` | Public browser account configuration |
 | `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY` | Server equivalents; server can fall back to the public values |
 | `SUPABASE_SECRET_KEY` | Server-only own-account deletion; optional until that capability is activated |
-| `GEMINI_API_KEY`, `GEMINI_MODEL` | Server-only AI configuration; selected model `gemini-3.8-flash` must be verified against your actual project access |
+| `GEMINI_API_KEY`, `GEMINI_MODEL` | Server-only Gemini configuration; defaults to `gemini-2.5-flash` |
+| `OPENROUTER_API_KEY`, `OPENROUTER_MODEL` | Optional server-only fallback for non-sensitive text; defaults to `google/gemini-2.5-flash`. Private text extraction and audio retain Gemini privacy gates |
 | `GEMINI_SENSITIVE_PROCESSING_ENABLED` | Defaults `false`. Enable only after billed-project/provider privacy setup and pilot review; required for audio and private event extraction |
 | `VITE_GOOGLE_MAPS_BROWSER_KEY` | Public, HTTP-referrer-restricted key; Maps JavaScript API |
 | `GOOGLE_MAPS_SERVER_KEY` | Private key restricted to Places API (New); configure Google billing separately |

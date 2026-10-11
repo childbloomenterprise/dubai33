@@ -9,6 +9,7 @@ import type {
 } from "../../shared/contracts";
 import { eventDraft } from "../../shared/contracts";
 import { sourceReply } from "./sourceReply";
+import { isSensitiveText } from "../../shared/safety";
 const uid = "00000000-0000-4000-a000-000000000001";
 const jid = "00000000-0000-4000-a000-000000000002";
 const now = new Date();
@@ -152,33 +153,28 @@ export async function previewRequest<T>(
     const text = payload!.text as string;
     const result: ChatResult = sourceReply(text);
     if (!result.medical_context.contains_health_guidance) {
-      const type = /ate|had|lunch|breakfast|dinner|meal/i.test(text)
-        ? "meal"
-        : /drank|water/i.test(text)
-          ? "hydration"
-          : "note";
-      const draft = eventDraft.parse({
-        event_type: type,
-        title: text.slice(0, 150),
-        timezone: payload!.timezone,
-      });
-      if (payload!.journey_id && profile.consents.sensitive_storage) {
-        const e = {
-          ...draft,
-          id: crypto.randomUUID(),
-          journey_id: payload!.journey_id,
-          user_id: uid,
-          created_at: new Date().toISOString(),
-          source_message_id: null,
-        };
-        events.push(e);
-        result.events = [{ status: "saved", event: e }];
-        result.reply =
-          "Added to this sample journey. In the connected app, Gemini understands your message and saves validated events.";
+      const response = !isSensitiveText(text)
+        ? await fetch("/api/preview-chat", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          })
+        : null;
+      if (response) {
+        const data = await response.json();
+        if (!response.ok)
+          throw new Error(
+            data.error?.message ||
+              "The companion could not connect. Please retry.",
+          );
+        result.reply = data.reply;
+        result.intent = data.intent;
       } else {
         result.reply =
-          "This is a development preview. Connect the services for the real companion.";
+          "Private messages stay in this local preview. Connect account services for private AI processing.";
       }
+      /* Preview has no database: do not pretend a model response saved events. */
+      result.events = [];
     }
     result.recent_events = events.slice(-4);
     result.conversation_id = jid;

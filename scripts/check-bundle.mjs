@@ -4,7 +4,7 @@ let bad = false;
 for (const name of files.filter((x) => x.endsWith(".js"))) {
   const text = await readFile(`dist/assets/${name}`, "utf8");
   if (
-    /GEMINI_API_KEY|SUPABASE_SECRET_KEY|GOOGLE_MAPS_SERVER_KEY|GoogleGenAI/.test(
+    /OPENROUTER_API_KEY|GEMINI_API_KEY|SUPABASE_SECRET_KEY|GOOGLE_MAPS_SERVER_KEY|GoogleGenAI/.test(
       text,
     )
   ) {
