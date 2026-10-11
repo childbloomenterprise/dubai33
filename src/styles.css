@@ -499,12 +499,22 @@ small,
   min-height: 285px;
   border: 1px solid #53746b7a;
 }
-.journey-hero > img {
+.journey-hero > img,
+.journey-hero > .destination-backdrop {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+.destination-backdrop-gradient {
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  padding: 14px;
+}
+.destination-backdrop-icon {
+  color: #ffffff6b;
 }
 .journey-shade {
   position: absolute;
@@ -744,6 +754,19 @@ small,
 .symptom-link svg:last-child {
   margin-left: auto;
 }
+.recommend-panel {
+  margin-top: 18px;
+  padding: 18px 20px;
+}
+.recommend-period {
+  text-transform: capitalize;
+}
+.recommend-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 14px 0 12px;
+}
 .home-cards {
   display: grid;
   grid-template-columns: 1.05fr 1fr 1.18fr;
@@ -854,7 +877,8 @@ small,
   background: transparent;
   padding: 0;
 }
-.food-mini-grid img {
+.food-mini-grid img,
+.food-mini-grid .food-mini-placeholder {
   width: 100%;
   height: 80px;
   border-radius: 10px;
@@ -987,6 +1011,92 @@ small,
   color: #e5f3f7;
   font-size: 13px;
   z-index: 150;
+}
+.chat-fab {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid #8fd6f5a0;
+  background: linear-gradient(140deg, #4fb3df, #2c6f94);
+  color: #f3fbff;
+  font-size: 12px;
+  font-weight: 550;
+}
+.chat-fab:hover {
+  background: linear-gradient(140deg, #5fc0ea, #317ea5);
+}
+.chat-fab--sidebar {
+  width: 100%;
+  border-radius: 13px;
+  padding: 10px 12px;
+  margin-bottom: 14px;
+  justify-content: flex-start;
+  text-align: left;
+}
+.chat-fab-icon {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+}
+.chat-fab-icon .chat-fab-ring {
+  inset: -3px;
+}
+.chat-fab--floating {
+  display: none;
+  position: fixed;
+  left: 16px;
+  bottom: 99px;
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  justify-content: center;
+  box-shadow: 0 10px 28px #0a3a5240;
+  z-index: 90;
+  animation: chatFabFloat 3.2s ease-in-out infinite;
+}
+.chat-fab-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px solid #c7ecfb;
+  animation: chatFabPulse 2.4s ease-out infinite;
+}
+@keyframes chatFabFloat {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+@keyframes chatFabPulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.7;
+  }
+  100% {
+    transform: scale(1.55);
+    opacity: 0;
+  }
+}
+@media (max-width: 960px) {
+  .chat-fab--sidebar {
+    justify-content: center;
+    padding: 10px;
+  }
+  .chat-fab--sidebar > span:last-child {
+    display: none;
+  }
+}
+@media (max-width: 600px) {
+  .chat-fab--floating {
+    display: grid;
+  }
 }
 .modal-overlay {
   position: fixed;
@@ -1138,6 +1248,53 @@ small,
   font-size: 13px;
   margin-bottom: 14px;
 }
+.meal-suggestions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 20px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid #2b3f52;
+}
+.meal-suggestions > .muted.small {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.meal-suggestion-group {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.meal-suggestion-group > small {
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #7d97ab;
+  font-size: 11px;
+}
+.chip-row {
+  display: flex;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+.chip {
+  border: 1px solid #40566c;
+  background: #1a2d3e;
+  border-radius: 999px;
+  padding: 7px 13px;
+  color: #d7e5ee;
+  font-size: 12px;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
+}
+.chip:hover:not(:disabled) {
+  border-color: #82cff0;
+  background: #22384a;
+}
+.chip:disabled {
+  opacity: 0.6;
+}
 .pill-tabs {
   display: flex;
   gap: 6px;
@@ -1161,6 +1318,174 @@ small,
   background: #82cff0;
   color: #163a50;
   border-color: #a5e2fa;
+}
+.entry-type-row {
+  display: flex;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+.chip-active {
+  background: #82cff0 !important;
+  color: #163a50 !important;
+  border-color: #a5e2fa !important;
+}
+.more-details-toggle {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  align-self: flex-start;
+  background: transparent;
+  border: 0;
+  color: #9fc6db;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 2px 0;
+}
+.more-details {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 16px;
+  border: 1px solid #2b3f52;
+  border-radius: 14px;
+  background: #142231;
+}
+.meal-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 4px;
+}
+.meal-picker-search input {
+  width: 100%;
+}
+.food-detail-placeholder,
+.food-mini-placeholder {
+  display: grid;
+  place-items: center;
+  color: #7fa6bc;
+  background: #1a2d3e;
+}
+.food-detail-placeholder {
+  width: 130px;
+  height: 130px;
+  border-radius: 13px;
+}
+.food-mini-placeholder {
+  width: 100%;
+  aspect-ratio: 1.4;
+  border-radius: 10px;
+}
+/* Date picker */
+.date-picker {
+  position: relative;
+}
+.date-picker-trigger {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  border: 1px solid #364f65;
+  border-radius: 12px;
+  background: #172637;
+  padding: 11px 13px;
+  color: #d7e5ee;
+  font-size: 13px;
+  text-align: left;
+}
+.date-picker-trigger:hover {
+  border-color: #82cff0;
+}
+.date-picker-pop {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 120;
+  width: 280px;
+  border: 1px solid #45657d;
+  background: #172a3b;
+  box-shadow: 0 20px 60px #0009;
+  border-radius: 16px;
+  padding: 14px;
+  animation: fadeIn 0.12s;
+}
+.date-picker-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  color: #d7e5ee;
+  font-size: 13px;
+}
+.date-picker-head button {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid #364f65;
+  border-radius: 8px;
+  background: transparent;
+  color: #b7ccda;
+}
+.date-picker-head button:hover {
+  border-color: #82cff0;
+  color: #82cff0;
+}
+.date-picker-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  margin-bottom: 4px;
+}
+.date-picker-weekdays span {
+  text-align: center;
+  font-size: 10px;
+  color: #7d97ab;
+}
+.date-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+.date-picker-day {
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #d7e5ee;
+  font-size: 12px;
+}
+.date-picker-day:hover:not(:disabled) {
+  background: #22384a;
+}
+.date-picker-day.outside {
+  color: #4c6578;
+}
+.date-picker-day.today {
+  border: 1px solid #82cff0;
+}
+.date-picker-day.selected {
+  background: #82cff0;
+  color: #163a50;
+  font-weight: 600;
+}
+.date-picker-day:disabled {
+  opacity: 0.35;
+}
+.date-picker-today {
+  width: 100%;
+  margin-top: 10px;
+  border: 1px solid #40566c;
+  border-radius: 8px;
+  background: transparent;
+  color: #9fc6db;
+  padding: 7px;
+  font-size: 12px;
+}
+.date-picker-today:hover {
+  border-color: #82cff0;
+  color: #82cff0;
 }
 .food-list {
   display: flex;
@@ -2259,7 +2584,8 @@ small,
   .summary-grid small {
     font-size: 10px;
   }
-  .food-mini-grid img {
+  .food-mini-grid img,
+  .food-mini-grid .food-mini-placeholder {
     height: 100px;
   }
 }
@@ -2313,7 +2639,8 @@ small,
   .food-teaser .food-mini-grid {
     gap: 14px;
   }
-  .food-mini-grid img {
+  .food-mini-grid img,
+  .food-mini-grid .food-mini-placeholder {
     height: 120px;
   }
   .food-mini-grid strong {
@@ -2714,7 +3041,8 @@ small,
     height: 35px;
     border-radius: 11px;
   }
-  .food-mini-grid img {
+  .food-mini-grid img,
+  .food-mini-grid .food-mini-placeholder {
     height: 88px;
   }
   .food-mini-grid strong {

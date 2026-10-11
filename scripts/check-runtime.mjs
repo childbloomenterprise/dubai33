@@ -8,6 +8,7 @@ const routes = [
   "nearby",
   "conversations",
   "privacy",
+  "onboarding",
   "status",
 ];
 for (const route of routes) {
@@ -40,5 +41,5 @@ for (const route of routes) {
   );
 }
 console.log(
-  "All nine compiled Node ESM routes load and return uncached access/setup responses.",
+  "All ten compiled Node ESM routes load and return uncached access/setup responses.",
 );

@@ -28,6 +28,15 @@ export default handler(["GET", "PATCH", "DELETE"], async (ctx) => {
     [profile, health, contacts, consents].forEach((x) => dbCheck(x.error));
     return {
       display_name: profile.data?.display_name || "",
+      // Questionnaire answers are account facts, so they stay readable even
+      // when private-storage consent is declined.
+      signup: {
+        date_of_birth: profile.data?.date_of_birth ?? null,
+        sex: profile.data?.sex ?? null,
+        interests: profile.data?.interests ?? [],
+        dietary_preference: profile.data?.dietary_preference ?? null,
+        onboarded: !!profile.data?.onboarded_at,
+      },
       profile: health.data
         ? {
             ...health.data,

@@ -1,5 +1,5 @@
 {
-  "tested_at": "2026-10-10T20:10:34.845Z",
+  "tested_at": "2026-10-10T22:49:14.149Z",
   "base": "https://linc-33.vercel.app",
   "results": [
     {
@@ -70,11 +70,12 @@
       "status": 200,
       "cache": "no-store",
       "body": {
-        "auth": false,
-        "ai": false,
-        "private_ai": false,
+        "auth": true,
+        "ai": true,
+        "private_ai": true,
         "nearby": false,
-        "account_deletion": false
+        "nearby_demo": true,
+        "account_deletion": true
       }
     },
     {
@@ -166,6 +167,17 @@
       }
     },
     {
+      "path": "/api/onboarding",
+      "status": 405,
+      "cache": "no-store",
+      "body": {
+        "error": {
+          "code": "METHOD_NOT_ALLOWED",
+          "message": "This action is unavailable."
+        }
+      }
+    },
+    {
       "path": "/api/chat",
       "method": "POST",
       "status": 401,
@@ -189,6 +201,17 @@
     },
     {
       "path": "/api/privacy",
+      "method": "POST",
+      "status": 401,
+      "body": {
+        "error": {
+          "code": "SIGN_IN_REQUIRED",
+          "message": "Sign in to continue."
+        }
+      }
+    },
+    {
+      "path": "/api/onboarding",
       "method": "POST",
       "status": 401,
       "body": {

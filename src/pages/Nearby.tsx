@@ -8,6 +8,7 @@ import {
   Pill,
   Stethoscope,
   Utensils,
+  BedDouble,
   Fuel,
   Navigation,
   Phone,
@@ -17,6 +18,13 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import type { Place, Location } from "../../shared/contracts";
+import {
+  MUNNAR,
+  demoDistance,
+  demoNotice,
+  demoPlacesFor,
+  projectToBox,
+} from "../../shared/demoPlaces";
 import { useLinc } from "../state";
 import { Button, Empty, ErrorBox } from "../components/ui";
 type MapAPI = {
@@ -67,6 +75,7 @@ const categories = [
   { id: "clinics", label: "Clinics", icon: Stethoscope },
   { id: "pharmacies", label: "Pharmacies", icon: Pill },
   { id: "restaurants", label: "Restaurants", icon: Utensils },
+  { id: "hotels", label: "Hotels", icon: BedDouble },
   { id: "petrol", label: "Petrol", icon: Fuel },
 ];
 function MapView({
@@ -127,6 +136,47 @@ function MapView({
     />
   );
 }
+/**
+ * Schematic map used only for the labelled Munnar demonstration points, so the
+ * Nearby screen stays useful before a Places key exists. It draws no provider
+ * tiles and carries no Google attribution, because none of this is provider data.
+ */
+function DemoMap({
+  places,
+  onSelect,
+}: {
+  places: Place[];
+  onSelect: (place: Place) => void;
+}) {
+  const points = places.length ? places : [MUNNAR];
+  return (
+    <div
+      className="demo-map"
+      role="group"
+      aria-label={`Schematic demonstration map of ${MUNNAR.label}`}
+    >
+      <div className="demo-map-grid" aria-hidden="true" />
+      <span className="demo-map-place">{MUNNAR.label}</span>
+      {places.map((place) => {
+        const position = projectToBox(points, place);
+        if (!position) return null;
+        return (
+          <button
+            key={place.id}
+            className="demo-pin"
+            style={{ left: `${position.x}%`, top: `${position.y}%` }}
+            onClick={() => onSelect(place)}
+            aria-label={`${place.name}, sample point`}
+          >
+            <MapPin size={14} />
+            <span>{place.name}</span>
+          </button>
+        );
+      })}
+      <span className="demo-map-scale">SAMPLE MAP · NOT TO SCALE</span>
+    </div>
+  );
+}
 export function Nearby() {
   const { call, signedIn, setAuthOpen, preview, activeJourney } = useLinc();
   const route = useLocation();
@@ -141,6 +191,7 @@ export function Nearby() {
   const [error, setError] = useState("");
   const [searched, setSearched] = useState(false);
   const [map, setMap] = useState(false);
+  const askedLocation = useRef(false);
   async function search(loc: Location | null = location, type = category) {
     if (!signedIn) {
       setAuthOpen(true);
@@ -150,10 +201,18 @@ export function Nearby() {
     setError("");
     setSelected(null);
     try {
-      if (preview)
-        throw new Error(
-          "Connect Google Places to see real nearby services. No sample hospitals are shown.",
+      if (preview) {
+        // Development fixture: the same labelled Munnar sample points the server
+        // serves while Places is unconfigured. Nothing is presented as real.
+        setPlaces(
+          demoPlacesFor(type).map((p) => ({
+            ...p,
+            distance_km: demoDistance(loc, p),
+          })),
         );
+        setSearched(true);
+        return;
+      }
       const params = new URLSearchParams({ category: type });
       if (loc) {
         params.set("lat", String(loc.lat));
@@ -169,6 +228,12 @@ export function Nearby() {
       setBusy(false);
     }
   }
+  useEffect(() => {
+    if (askedLocation.current || !signedIn) return;
+    askedLocation.current = true;
+    locate();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [signedIn]);
   function locate() {
     if (!navigator.geolocation) {
       setError("Location is unavailable. Enter a destination instead.");
@@ -195,6 +260,7 @@ export function Nearby() {
       { maximumAge: 60000, timeout: 12000, enableHighAccuracy: false },
     );
   }
+  const demo = places.some((p) => p.demo);
   return (
     <div className="page nearby-page">
       <div className="page-heading">
@@ -265,7 +331,11 @@ export function Nearby() {
       {places.length > 0 ? (
         <>
           <div className="results-header">
-            <span>{places.length} verified place results</span>
+            <span>
+              {demo
+                ? `${places.length} sample points — not real places`
+                : `${places.length} verified place results`}
+            </span>
             <div className="segmented">
               <button
                 className={!map ? "active" : ""}
@@ -283,6 +353,15 @@ export function Nearby() {
               </button>
             </div>
           </div>
+          {demo && (
+            <p className="demo-banner" role="status">
+              <MapIcon size={16} />
+              <span>
+                {demoNotice} Add a Google Places key to replace them with real
+                services.
+              </span>
+            </p>
+          )}
           <div className={`nearby-results ${map ? "with-map" : ""}`}>
             <div className="places-list">
               {places.map((p) => (
@@ -350,21 +429,27 @@ export function Nearby() {
                   ) : null}
                 </article>
               ))}
-              <div className="google-attribution">
-                <img
-                  src="/images/google-maps-attribution.svg"
-                  alt="Google Maps"
-                  translate="no"
-                />
-              </div>
+              {!demo && (
+                <div className="google-attribution">
+                  <img
+                    src="/images/google-maps-attribution.svg"
+                    alt="Google Maps"
+                    translate="no"
+                  />
+                </div>
+              )}
             </div>
             {map && (
               <div className="map-panel panel">
-                <MapView
-                  places={places}
-                  location={location}
-                  onSelect={setSelected}
-                />
+                {demo ? (
+                  <DemoMap places={places} onSelect={setSelected} />
+                ) : (
+                  <MapView
+                    places={places}
+                    location={location}
+                    onSelect={setSelected}
+                  />
+                )}
                 {selected && (
                   <div className="selected-map-place">
                     <h3>{selected.name}</h3>
@@ -413,7 +498,7 @@ export function Nearby() {
           </Empty>
           <div className="nearby-assurance">
             <ShieldCheck size={16} />
-            Real place information. No invented recommendations.
+            Real places once a key is connected. Nothing here is invented.
           </div>
         </div>
       )}

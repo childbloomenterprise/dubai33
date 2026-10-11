@@ -5,6 +5,13 @@ create table public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   display_name text not null default '' check (length(display_name) <= 100),
   preferred_language text not null default 'en',
+  -- Collected by the self-serve signup questionnaire. Non-clinical account facts,
+  -- so they are not gated behind health-storage consent.
+  sex text check (sex in ('male','female')),
+  date_of_birth date check (date_of_birth between date '1900-01-01' and date '2100-01-01'),
+  interests text[] not null default '{}',
+  dietary_preference text check (dietary_preference in ('vegetarian','non_vegetarian','vegan','pescatarian','no_preference')),
+  onboarded_at timestamptz,
   created_at timestamptz not null default now(), updated_at timestamptz not null default now()
 );
 create table public.consent_records (
@@ -239,6 +246,49 @@ end $$;
 revoke all on function public.delete_health_profile() from public,anon;
 grant execute on function public.delete_health_profile() to authenticated;
 
+-- Self-serve signup questionnaire. Account facts are always stored; allergies and
+-- the emergency contact are only written when the caller granted private-storage
+-- consent in the same transaction, so the consent gate is never bypassed.
+create function public.save_signup_profile(p_profile jsonb) returns jsonb language plpgsql security definer set search_path=public,pg_temp as $$
+declare u uuid:=auth.uid();
+  dob date:=nullif(p_profile->>'date_of_birth','')::date;
+  storage_consent boolean:=coalesce((p_profile->>'storage_consent')::boolean,false);
+  ai_consent boolean:=coalesce((p_profile->>'ai_consent')::boolean,false);
+  years integer; bucket text; contact jsonb:=p_profile->'emergency_contact';
+begin
+  if u is null then raise exception 'Unauthorized'; end if;
+  if dob is null then raise exception 'Date of birth required'; end if;
+  if dob > (current_date - interval '18 years') then raise exception 'Adults only'; end if;
+  years:=extract(year from age(dob))::integer;
+  bucket:=case when years<30 then '18–29' when years<45 then '30–44' when years<60 then '45–59' else '60+' end;
+  perform pg_advisory_xact_lock(hashtextextended(u::text,0));
+  insert into profiles(id,display_name,sex,date_of_birth,interests,dietary_preference,onboarded_at)
+    values(u,left(coalesce(p_profile->>'display_name',''),100),nullif(p_profile->>'sex',''),dob,
+      coalesce(array(select jsonb_array_elements_text(coalesce(p_profile->'interests','[]'::jsonb))),'{}'),
+      nullif(p_profile->>'dietary_preference',''),now())
+    on conflict(id) do update set display_name=excluded.display_name,sex=excluded.sex,date_of_birth=excluded.date_of_birth,
+      interests=excluded.interests,dietary_preference=excluded.dietary_preference,onboarded_at=excluded.onboarded_at,updated_at=now();
+  if ai_consent then
+    insert into consent_records(user_id,consent_type) values(u,'external_ai')
+      on conflict(user_id,consent_type) where revoked_at is null do nothing;
+  end if;
+  if storage_consent then
+    insert into consent_records(user_id,consent_type) values(u,'sensitive_storage')
+      on conflict(user_id,consent_type) where revoked_at is null do nothing;
+    insert into health_profiles(user_id,age_range,allergies)
+      values(u,bucket,coalesce(array(select jsonb_array_elements_text(coalesce(p_profile->'allergies','[]'::jsonb))),'{}'))
+      on conflict(user_id) do update set age_range=excluded.age_range,allergies=excluded.allergies,updated_at=now();
+    if contact is not null and contact<>'null'::jsonb and nullif(contact->>'phone','') is not null then
+      insert into emergency_contacts(user_id,name,phone,relationship)
+        values(u,coalesce(contact->>'name',''),contact->>'phone',coalesce(contact->>'relationship',''))
+        on conflict(user_id) do update set name=excluded.name,phone=excluded.phone,relationship=excluded.relationship;
+    end if;
+  end if;
+  return jsonb_build_object('success',true,'storage_saved',storage_consent,'age_range',bucket);
+end $$;
+revoke all on function public.save_signup_profile(jsonb) from public,anon;
+grant execute on function public.save_signup_profile(jsonb) to authenticated;
+
 -- Revoke default PUBLIC execution explicitly. All privileged RPCs derive identity from auth.uid().
 revoke all on function public.has_storage_consent() from public,anon;
 revoke all on function public.set_consent(text,boolean) from public,anon;
@@ -248,7 +298,7 @@ revoke all on function public.consume_usage(text,integer) from public,anon;
 revoke all on function public.persist_chat_turn(uuid,uuid,uuid,text,jsonb,jsonb) from public,anon;
 revoke all on function public.create_manual_event(uuid,uuid,jsonb) from public,anon;
 revoke all on function public.save_health_profile(jsonb) from public,anon;
-grant execute on function public.has_storage_consent(),public.set_consent(text,boolean),public.start_journey(text,text,timestamptz,timestamptz),public.set_journey_status(uuid,text),public.consume_usage(text,integer),public.persist_chat_turn(uuid,uuid,uuid,text,jsonb,jsonb),public.create_manual_event(uuid,uuid,jsonb),public.save_health_profile(jsonb) to authenticated;
+grant execute on function public.has_storage_consent(),public.set_consent(text,boolean),public.start_journey(text,text,timestamptz,timestamptz),public.set_journey_status(uuid,text),public.consume_usage(text,integer),public.persist_chat_turn(uuid,uuid,uuid,text,jsonb,jsonb),public.create_manual_event(uuid,uuid,jsonb),public.save_health_profile(jsonb),public.save_signup_profile(jsonb) to authenticated;
 
 insert into medical_knowledge(id,topic,source_title,source_organization,source_url,verified_at,license_status,review_status,summary) values
 ('foodborne','Foodborne symptoms','Food Poisoning Symptoms','CDC','https://www.cdc.gov/food-safety/signs-symptoms/index.html','2026-10-10','Original linked summary; no third-party material','source_verified','Foodborne symptoms have multiple causes and onset times. Timing alone does not identify the cause. Consult the linked guidance for warning signs.'),

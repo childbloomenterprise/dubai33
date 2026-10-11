@@ -80,6 +80,67 @@ export const healthInput = z
       .nullable(),
   })
   .strict();
+/** Interests offered in the signup questionnaire. Free values are rejected. */
+export const interestOptions = [
+  "trekking",
+  "beaches",
+  "backwaters",
+  "temples & heritage",
+  "street food",
+  "wildlife",
+  "ayurveda & wellness",
+  "photography",
+  "hill stations",
+  "cities & nightlife",
+] as const;
+export const dietaryOptions = [
+  "vegetarian",
+  "non_vegetarian",
+  "vegan",
+  "pescatarian",
+  "no_preference",
+] as const;
+export const allergyOptions = [
+  "none",
+  "peanuts",
+  "tree nuts",
+  "shellfish",
+  "fish",
+  "dairy",
+  "gluten",
+  "eggs",
+  "soy",
+  "sesame",
+] as const;
+/** The signup questionnaire: seven answers plus the two consent choices. */
+export const signupInput = z
+  .object({
+    display_name: z.string().trim().min(1).max(100),
+    date_of_birth: z.iso.date(),
+    sex: z.enum(["male", "female"]),
+    allergies: z.array(z.enum(allergyOptions)).max(allergyOptions.length),
+    dietary_preference: z.enum(dietaryOptions),
+    interests: z
+      .array(z.enum(interestOptions))
+      .min(1)
+      .max(interestOptions.length),
+    emergency_contact: z
+      .object({
+        name: z.string().trim().min(1).max(100),
+        phone: z.string().regex(/^\+?[\d ()-]{7,25}$/),
+        relationship: z.string().max(80).default(""),
+      })
+      .nullable(),
+    adult: z.literal(true),
+    storage_consent: z.boolean(),
+    ai_consent: z.boolean(),
+  })
+  .strict()
+  .refine((x) => !x.emergency_contact || x.storage_consent, {
+    message:
+      "An emergency contact is private storage, so it needs private storage enabled",
+  });
+export type SignupInput = z.infer<typeof signupInput>;
 export type EventDraft = z.infer<typeof eventDraft>;
 export type EventType = (typeof eventTypes)[number];
 export type Urgency = "none" | "routine" | "seek_care" | "emergency";
@@ -155,6 +216,8 @@ export interface Place {
   open_now?: boolean;
   distance_km?: number;
   maps_url: string;
+  /** Set only on the labelled Munnar demonstration points. */
+  demo?: boolean;
   attribution?: string;
   attributions?: Array<{ provider: string; uri?: string }>;
 }
@@ -164,9 +227,18 @@ export interface Location {
   accuracy?: number;
   captured_at: string;
 }
+/** Non-clinical questionnaire answers, readable without health-storage consent. */
+export interface SignupState {
+  date_of_birth: string | null;
+  sex: "male" | "female" | null;
+  interests: string[];
+  dietary_preference: string | null;
+  onboarded: boolean;
+}
 export interface ProfileState {
   profile: HealthProfileInput | null;
   display_name: string;
+  signup?: SignupState;
   consents: Record<ConsentType, boolean>;
 }
 export const actionSchema = z.object({
@@ -235,6 +307,8 @@ export const placeSchema = z.object({
   maps_url: z
     .url()
     .refine((value) => new URL(value).hostname === "www.google.com"),
+  /** True only for the labelled Munnar demonstration points. */
+  demo: z.boolean().optional(),
   attribution: z.string().max(2000).optional(),
   attributions: z
     .array(
@@ -268,7 +342,12 @@ export function responseSchema(route: string, method: string) {
   const [path, query = ""] = route.split("?");
   if (path === "chat") return chatResultSchema;
   if (path === "transcribe")
-    return z.object({ text: z.string().min(1).max(4000) });
+    return z.object({
+      // English, regardless of the language spoken into the microphone.
+      text: z.string().min(1).max(4000),
+      original: z.string().max(4000).optional(),
+      language: z.string().max(60).optional(),
+    });
   if (path === "nearby") return z.array(placeSchema).max(12);
   if (path === "status")
     return z.object({
@@ -276,6 +355,8 @@ export function responseSchema(route: string, method: string) {
       ai: z.boolean(),
       private_ai: z.boolean(),
       nearby: z.boolean(),
+      /** Nearby is serving labelled Munnar sample points rather than a provider. */
+      nearby_demo: z.boolean().optional(),
       account_deletion: z.boolean(),
     });
   if (path === "journeys")
@@ -290,11 +371,26 @@ export function responseSchema(route: string, method: string) {
       : method === "DELETE"
         ? success
         : journeyEventSchema;
+  if (path === "onboarding")
+    return z.object({
+      success: z.literal(true),
+      storage_saved: z.boolean(),
+      age_range: z.string().max(10),
+    });
   if (path === "health-context")
     return method === "GET"
       ? z.object({
           display_name: z.string().max(100),
           profile: healthInput.passthrough().nullable(),
+          signup: z
+            .object({
+              date_of_birth: z.string().max(20).nullable(),
+              sex: z.enum(["male", "female"]).nullable(),
+              interests: z.array(z.string().max(60)).max(20),
+              dietary_preference: z.string().max(40).nullable(),
+              onboarded: z.boolean(),
+            })
+            .optional(),
           consents: z.object({
             sensitive_storage: z.boolean(),
             external_ai: z.boolean(),

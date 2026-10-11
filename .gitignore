@@ -6,3 +6,9 @@ dist/
 coverage/
 *.tsbuildinfo
 .local/
+
+.vercel
+.env*
+
+# Local handoff notes may contain real credentials; never commit them.
+docs/CONTINUATION-PROMPT.txt

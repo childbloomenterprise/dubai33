@@ -16,12 +16,19 @@ import {
   Bot,
   Sparkles,
   ShieldCheck,
+  Search as SearchIcon,
 } from "lucide-react";
 import { format } from "date-fns";
 import { useLinc } from "../state";
-import { dishes } from "../../shared/cuisine";
+import {
+  dishes,
+  mealSuggestions,
+  mealPeriodForHour,
+} from "../../shared/cuisine";
+import { eventDraft } from "../../shared/contracts";
 import { Button, ErrorBox } from "../components/ui";
 import { isHealthText, screenSafety } from "../../shared/safety";
+import { DestinationBackdrop } from "../components/DestinationBackdrop";
 export function Home({
   onNew,
   onVoice,
@@ -44,10 +51,54 @@ export function Home({
     busy,
     dataError,
     refresh,
+    call,
+    notify,
   } = useLinc();
   const navigate = useNavigate();
   const [text, setText] = useState("");
+  const [recLogging, setRecLogging] = useState<string | null>(null);
   const name = profile.display_name?.split(" ")[0] || "traveler";
+  const diet = profile.signup?.dietary_preference;
+  const vegOnly = diet === "vegetarian" || diet === "vegan";
+  const period = mealPeriodForHour(new Date().getHours());
+  const mealRecs = mealSuggestions
+    .filter((s) => s.period === period)
+    .filter((s) => !vegOnly || s.diet === "vegetarian")
+    .slice(0, 3);
+  async function logRecommendation(label: string) {
+    if (!signedIn) {
+      setAuthOpen(true);
+      return;
+    }
+    if (!activeJourney) {
+      onNew();
+      return;
+    }
+    if (!profile.consents.sensitive_storage) {
+      notify("Enable private storage in Profile before saving entries.");
+      return;
+    }
+    setRecLogging(label);
+    try {
+      const draft = eventDraft.parse({
+        event_type: "meal",
+        title: label,
+        occurred_at: new Date().toISOString(),
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      });
+      await call("events", "POST", {
+        request_id: crypto.randomUUID(),
+        journey_id: activeJourney.id,
+        event: draft,
+      });
+      await refresh();
+      notify(`${label} added to your journey.`);
+    } catch (err) {
+      notify((err as Error).message);
+    } finally {
+      setRecLogging(null);
+    }
+  }
   const today = events.filter(
     (e) =>
       new Date(e.occurred_at || e.created_at).toDateString() ===
@@ -101,13 +152,96 @@ export function Home({
       {dataError && (
         <ErrorBox message={dataError.message} retry={() => void refresh()} />
       )}
+      <section className="mobile-welcome-hero" aria-label="Welcome to LINC-33">
+        <img
+          src="/images/kerala-backwaters.webp"
+          alt="Traditional Kerala houseboat crossing calm tropical backwaters"
+          fetchPriority="high"
+        />
+        <div className="mobile-hero-overlay" />
+        <div className="mobile-welcome-copy">
+          <span>TRAVEL WELL, FEEL AT HOME</span>
+          <h1>Good to see you, {name}.</h1>
+          <p>More exploring. Less worrying. I’m here when you need me.</p>
+        </div>
+        <form
+          className="mobile-hero-composer"
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (text.trim()) goChat(text);
+          }}
+        >
+          <SearchIcon size={18} />
+          <input
+            aria-label="Ask LINC-33 from home"
+            placeholder="Ask me anything…"
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            maxLength={4000}
+          />
+          <button type="button" onClick={onVoice} aria-label="Speak to LINC-33">
+            <Mic size={18} />
+          </button>
+          <button
+            type="submit"
+            disabled={!text.trim()}
+            aria-label="Send message"
+          >
+            <ArrowRight size={18} />
+          </button>
+        </form>
+      </section>
+      <section
+        className="panel recommend-panel"
+        aria-label="Recommended for you"
+      >
+        <div className="card-title">
+          <div>
+            <Sparkles size={19} />
+            <h3>Recommended for you</h3>
+          </div>
+          <span className="muted small recommend-period">{period}</span>
+        </div>
+        <div className="recommend-row">
+          {mealRecs.map((s) => (
+            <button
+              type="button"
+              className="chip"
+              key={s.id}
+              disabled={recLogging === s.label}
+              onClick={() => void logRecommendation(s.label)}
+            >
+              {recLogging === s.label ? "Saving…" : s.label}
+            </button>
+          ))}
+        </div>
+        {activeJourney ? (
+          <button className="nearby-choice" onClick={() => navigate("/nearby")}>
+            <span className="mini-icon rose">
+              <MapPin size={18} />
+            </span>
+            <span>
+              <strong>Not sure what’s around?</strong>
+              <small>Check hospitals, pharmacies & petrol nearby</small>
+            </span>
+            <ArrowUpRight size={16} />
+          </button>
+        ) : (
+          <button className="nearby-choice" onClick={onNew}>
+            <span className="mini-icon green">
+              <Compass size={18} />
+            </span>
+            <span>
+              <strong>Start your journey</strong>
+              <small>Save meals and moments as you go</small>
+            </span>
+            <ArrowUpRight size={16} />
+          </button>
+        )}
+      </section>
       <div className="hero-grid">
         <section className="journey-hero" aria-label="Your journey">
-          <img
-            src="/images/munnar.webp"
-            alt="Morning mist over emerald tea plantations in Munnar"
-            fetchPriority="high"
-          />
+          <DestinationBackdrop destination={activeJourney?.destination_name} />
           <div className="journey-shade" />
           <div className="journey-hero-top">
             <span className="photo-pill">
@@ -232,6 +366,29 @@ export function Home({
           </button>
         </section>
       </div>
+      <section className="mobile-continue" aria-label="Continue your journey">
+        <div className="mobile-section-title">
+          <h2>Continue your journey</h2>
+          <button onClick={activeJourney ? () => navigate("/journey") : onNew}>
+            See all <ArrowUpRight size={14} />
+          </button>
+        </div>
+        <button
+          className="continue-card"
+          onClick={activeJourney ? () => navigate("/journey") : onNew}
+        >
+          <DestinationBackdrop destination={activeJourney?.destination_name} />
+          <span>
+            <strong>
+              {activeJourney?.destination_name || "Munnar, Kerala"}
+            </strong>
+            <small>
+              {activeJourney?.title || "Tea gardens, cool air, happy you."}
+            </small>
+          </span>
+          <ArrowRight size={18} />
+        </button>
+      </section>
       <div className="home-cards">
         <section className="panel summary-panel">
           <div className="card-title">
@@ -368,12 +525,18 @@ export function Home({
           </div>
           <p className="card-date">Meet the flavors of your destination.</p>
           <div className="food-mini-grid">
-            {dishes.map((d) => (
+            {dishes.slice(0, 6).map((d) => (
               <button key={d.id} onClick={onFood}>
-                <img src={d.image} alt={d.name} loading="lazy" />
+                {d.image ? (
+                  <img src={d.image} alt={d.name} loading="lazy" />
+                ) : (
+                  <span className="food-mini-placeholder" aria-hidden="true">
+                    <Soup size={20} />
+                  </span>
+                )}
                 <strong>{d.name}</strong>
                 <small>
-                  {d.diet === "vegetarian" ? "Vegetarian" : "Contains fish"}
+                  {d.diet === "vegetarian" ? "Vegetarian" : "Non-vegetarian"}
                 </small>
               </button>
             ))}

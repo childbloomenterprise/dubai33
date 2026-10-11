@@ -24,6 +24,12 @@ import type {
 import { screenSafety, isHealthText } from "../../shared/safety";
 import { sources } from "../../shared/knowledge";
 import { sourceReply } from "../lib/sourceReply";
+import {
+  listLocalConversations,
+  getLocalConversation,
+  saveLocalConversation,
+  deleteLocalConversation,
+} from "../lib/localChat";
 import { useLinc } from "../state";
 import { Button, ErrorBox, Modal } from "../components/ui";
 
@@ -81,6 +87,10 @@ export function Chat({
     pendingRequests.current.clear();
   }, [identity]);
   useEffect(() => {
+    if (!signedIn && conversationId && messages.length)
+      saveLocalConversation(conversationId, messages);
+  }, [signedIn, conversationId, messages]);
+  useEffect(() => {
     end.current?.scrollIntoView({
       behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
         ? "instant"
@@ -100,6 +110,10 @@ export function Chat({
     setError("");
     setRetry(null);
     setBusy(true);
+    const guestConversationId =
+      !signedIn && !conversationId ? crypto.randomUUID() : conversationId;
+    if (!signedIn && guestConversationId !== conversationId)
+      setConversation(guestConversationId);
     setMessages((previous) =>
       previous.some((m) => m.id === requestId)
         ? previous
@@ -129,7 +143,7 @@ export function Chat({
         : {
             ...sourceReply(value),
             persistence_error:
-              "This conversation is not saved. Sign in and choose your privacy settings to keep records.",
+              "Saved on this device only. Sign in to sync your history and journey entries across devices.",
           };
       if (identityRef.current !== sender) return;
       setMessages((previous) => [
@@ -166,7 +180,10 @@ export function Chat({
   async function openHistory() {
     setHistory(true);
     setError("");
-    if (!signedIn) return;
+    if (!signedIn) {
+      setConversations(listLocalConversations());
+      return;
+    }
     try {
       setConversations(await call<Conversation[]>("conversations"));
     } catch (err) {
@@ -175,6 +192,15 @@ export function Chat({
   }
   async function resume(id: string) {
     try {
+      if (!signedIn) {
+        setMessages(getLocalConversation(id));
+        setConversation(id);
+        setConversationJourney(null);
+        setHistory(false);
+        setUrgent(null);
+        setRetry(null);
+        return;
+      }
       setMessages(await call<Message[]>(`conversations?id=${id}`));
       setConversation(id);
       setConversationJourney(
@@ -190,7 +216,8 @@ export function Chat({
   async function deleteConversation() {
     if (!deleteId) return;
     try {
-      await call(`conversations?id=${deleteId}`, "DELETE");
+      if (!signedIn) deleteLocalConversation(deleteId);
+      else await call(`conversations?id=${deleteId}`, "DELETE");
       if (conversationId === deleteId) {
         setMessages([]);
         setConversation(null);
@@ -566,7 +593,11 @@ export function Chat({
         open={history}
         onOpenChange={setHistory}
         title="Pick up where you left off"
-        description="Your saved conversations. Deleting a conversation also removes events extracted from its messages."
+        description={
+          signedIn
+            ? "Your saved conversations. Deleting a conversation also removes events extracted from its messages."
+            : "Saved on this device. Sign in to sync your history across devices."
+        }
       >
         {error && <ErrorBox message={error} />}
         <div className="conversation-list">

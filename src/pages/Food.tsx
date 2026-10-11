@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { MapPin, ArrowUpRight, Utensils, Leaf, Info } from "lucide-react";
+import { MapPin, ArrowUpRight, Utensils, Leaf, Info, Soup } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { dishes } from "../../shared/cuisine";
 import { Button, Modal } from "../components/ui";
@@ -45,7 +45,13 @@ export function Food({
           .filter((d) => filter === "all" || d.diet === filter)
           .map((d) => (
             <article className="food-detail" key={d.id}>
-              <img src={d.image} alt={d.name} />
+              {d.image ? (
+                <img src={d.image} alt={d.name} />
+              ) : (
+                <div className="food-detail-placeholder" aria-hidden="true">
+                  <Soup size={28} />
+                </div>
+              )}
               <div>
                 <span className="eyebrow">
                   {d.diet === "vegetarian" ? "VEGETARIAN" : "CONTAINS FISH"}

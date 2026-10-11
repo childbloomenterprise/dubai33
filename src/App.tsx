@@ -29,11 +29,13 @@ import {
   PanelLeftClose,
   Menu,
   X,
+  Bot,
 } from "lucide-react";
 import type { JourneyEvent, EventType } from "../shared/contracts";
 import { useLinc } from "./state";
 import { Button, Modal } from "./components/ui";
 import { Auth } from "./components/Auth";
+import { Onboarding } from "./components/Onboarding";
 import { Voice } from "./components/Voice";
 import { JourneyForm, EventForm } from "./components/JourneyForms";
 import { Home } from "./pages/Home";
@@ -81,8 +83,16 @@ class PageBoundary extends Component<
   }
 }
 export function App() {
-  const { preview, profile, signedIn, setAuthOpen, notice, activeJourney } =
-    useLinc();
+  const {
+    preview,
+    profile,
+    signedIn,
+    setAuthOpen,
+    notice,
+    activeJourney,
+    onboardingOpen,
+    setOnboardingOpen,
+  } = useLinc();
   const navigate = useNavigate();
   const route = useLocation();
   const [voice, setVoice] = useState(false);
@@ -174,6 +184,18 @@ export function App() {
           <span className="brand-caption">YOUR JOURNEY, CONNECTED.</span>
           <nav aria-label="Main navigation">{links}</nav>
           <div className="sidebar-bottom">
+            {route.pathname !== "/chat" && (
+              <button
+                className="chat-fab chat-fab--sidebar"
+                onClick={() => navigate("/chat")}
+              >
+                <span className="chat-fab-icon">
+                  <span className="chat-fab-ring" aria-hidden="true" />
+                  <Bot size={19} />
+                </span>
+                <span>Chat with your companion</span>
+              </button>
+            )}
             <div className="sidebar-note">
               <Compass size={22} />
               <p>
@@ -208,6 +230,14 @@ export function App() {
               onClick={() => setMenu(!menu)}
             >
               {menu ? <X size={22} /> : <Menu size={22} />}
+            </button>
+            <button
+              className="mobile-brand"
+              aria-label="Go to LINC-33 home"
+              onClick={() => navigate("/")}
+            >
+              <MountainSnow size={28} strokeWidth={1.9} />
+              <span>LINC—33</span>
             </button>
             <form
               className="global-search"
@@ -360,6 +390,16 @@ export function App() {
           {links}
         </nav>
       </div>
+      {route.pathname !== "/chat" && (
+        <button
+          className="chat-fab chat-fab--floating"
+          aria-label="Chat with your companion"
+          onClick={() => navigate("/chat")}
+        >
+          <span className="chat-fab-ring" aria-hidden="true" />
+          <Bot size={22} />
+        </button>
+      )}
       {notice && (
         <div className="toast" role="status">
           <Heart size={17} />
@@ -367,6 +407,10 @@ export function App() {
         </div>
       )}
       <Auth />
+      <Onboarding
+        open={onboardingOpen}
+        onClose={() => setOnboardingOpen(false)}
+      />
       <JourneyForm open={newJourney} onClose={() => setNewJourney(false)} />
       <EventForm
         open={eventOpen}

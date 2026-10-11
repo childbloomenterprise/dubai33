@@ -19,6 +19,14 @@ import { healthInput } from "../../shared/contracts";
 import { sources } from "../../shared/knowledge";
 import { useLinc } from "../state";
 import { Button, ErrorBox, Modal, Empty } from "../components/ui";
+import { Onboarding, ageFrom } from "../components/Onboarding";
+const dietLabels: Record<string, string> = {
+  vegetarian: "Vegetarian",
+  non_vegetarian: "Non-vegetarian",
+  vegan: "Vegan",
+  pescatarian: "Pescatarian",
+  no_preference: "No preference",
+};
 const split = (text: string) =>
   text
     .split(",")
@@ -49,6 +57,7 @@ export function Profile({ onVoiceMeal }: { onVoiceMeal: () => void }) {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [editDetails, setEditDetails] = useState(false);
   const [confirm, setConfirm] = useState("");
   const [eraseHealth, setEraseHealth] = useState(false);
   useEffect(() => {
@@ -225,6 +234,74 @@ export function Profile({ onVoiceMeal }: { onVoiceMeal: () => void }) {
               Log foods by voice
             </Button>
           </div>
+          {signedIn && tab === "health" && (
+            <div className="about-you">
+              <div className="card-title">
+                <div>
+                  <UserRound size={19} />
+                  <h3>About you</h3>
+                </div>
+                <button
+                  className="text-link"
+                  onClick={() => setEditDetails(true)}
+                >
+                  Update details
+                  <ArrowRight size={14} />
+                </button>
+              </div>
+              {profile.signup?.onboarded ? (
+                <dl className="about-grid">
+                  <div>
+                    <dt>Age</dt>
+                    <dd>
+                      {ageFrom(profile.signup.date_of_birth || "") ?? "Not set"}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>Sex</dt>
+                    <dd>
+                      {profile.signup.sex
+                        ? profile.signup.sex[0].toUpperCase() +
+                          profile.signup.sex.slice(1)
+                        : "Not set"}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>Usually eats</dt>
+                    <dd>
+                      {dietLabels[profile.signup.dietary_preference || ""] ||
+                        "Not set"}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>Interests</dt>
+                    <dd>
+                      {profile.signup.interests?.length
+                        ? profile.signup.interests.join(", ")
+                        : "Not set"}
+                    </dd>
+                  </div>
+                </dl>
+              ) : (
+                <p className="muted">
+                  Tell us a little about yourself and your answers shape your
+                  journey and food diary.{" "}
+                  <button
+                    className="text-link"
+                    onClick={() => setEditDetails(true)}
+                  >
+                    Answer seven questions
+                    <ArrowRight size={14} />
+                  </button>
+                </p>
+              )}
+            </div>
+          )}
+          <Onboarding
+            open={editDetails}
+            onClose={() => setEditDetails(false)}
+            mode="edit"
+          />
           {error && <ErrorBox message={error} />}
           {tab === "sources" ? (
             <>

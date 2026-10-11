@@ -73,6 +73,88 @@ describe("actual migration in embedded PostgreSQL", () => {
       ]),
     ).rejects.toThrow("Unauthorized");
   });
+  it("stores signup answers without leaking health data before consent", async () => {
+    await asUser(a);
+    const created = await db.query<{ value: { storage_saved: boolean } }>(
+      "select save_signup_profile($1) as value",
+      [
+        {
+          display_name: "Alex",
+          date_of_birth: "1996-04-02",
+          sex: "female",
+          allergies: ["peanuts"],
+          dietary_preference: "vegetarian",
+          interests: ["trekking"],
+          emergency_contact: {
+            name: "Sam",
+            phone: "+919876543210",
+            relationship: "Sister",
+          },
+          adult: true,
+          storage_consent: false,
+          ai_consent: true,
+        },
+      ],
+    );
+    expect(created.rows[0].value.storage_saved).toBe(false);
+    const profile = await db.query<{ interests: string[] }>(
+      "select interests from profiles where id=$1",
+      [a],
+    );
+    expect(profile.rows[0].interests).toEqual(["trekking"]);
+    // Declining private storage must leave allergies and the contact unstored.
+    expect((await db.query("select * from health_profiles")).rows).toHaveLength(
+      0,
+    );
+    expect(
+      (await db.query("select * from emergency_contacts")).rows,
+    ).toHaveLength(0);
+  });
+  it("refuses a self-serve signup below 18", async () => {
+    await asUser(a);
+    await expect(
+      db.query("select save_signup_profile($1)", [
+        {
+          display_name: "Too young",
+          date_of_birth: new Date().toISOString().slice(0, 10),
+        },
+      ]),
+    ).rejects.toThrow("Adults only");
+  });
+  it("derives the age bucket and stores allergies once consent is granted", async () => {
+    await asUser(a);
+    const result = await db.query<{ value: { storage_saved: boolean } }>(
+      "select save_signup_profile($1) as value",
+      [
+        {
+          display_name: "Alex",
+          date_of_birth: "1996-04-02",
+          sex: "female",
+          allergies: ["peanuts"],
+          dietary_preference: "vegetarian",
+          interests: ["trekking", "street food"],
+          emergency_contact: {
+            name: "Sam",
+            phone: "+919876543210",
+            relationship: "Sister",
+          },
+          adult: true,
+          storage_consent: true,
+          ai_consent: true,
+        },
+      ],
+    );
+    expect(result.rows[0].value.storage_saved).toBe(true);
+    const health = await db.query<{ allergies: string[]; age_range: string }>(
+      "select allergies, age_range from health_profiles where user_id=$1",
+      [a],
+    );
+    expect(health.rows[0].allergies).toEqual(["peanuts"]);
+    expect(health.rows[0].age_range).toBe("30–44");
+    expect(
+      (await db.query("select * from emergency_contacts")).rows,
+    ).toHaveLength(1);
+  });
   it("keeps repeated manual saves idempotent", async () => {
     await db.query("select set_consent('sensitive_storage',true)");
     const key = crypto.randomUUID();

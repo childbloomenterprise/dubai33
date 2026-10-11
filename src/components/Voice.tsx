@@ -21,6 +21,9 @@ export function Voice({
   const [seconds, setSeconds] = useState(0);
   const [level, setLevel] = useState(0);
   const [text, setText] = useState("");
+  const [heard, setHeard] = useState<{ language?: string; original?: string }>(
+    {},
+  );
   const [error, setError] = useState("");
   const recorder = useRef<MediaRecorder | null>(null);
   const stream = useRef<MediaStream | null>(null);
@@ -44,6 +47,7 @@ export function Voice({
       setState("idle");
       setSeconds(0);
       setText("");
+      setHeard({});
       setError("");
     }
     return () => {
@@ -144,12 +148,17 @@ export function Voice({
             r.onerror = reject;
             r.readAsDataURL(blob);
           });
-          const result = await call<{ text: string }>("transcribe", "POST", {
+          const result = await call<{
+            text: string;
+            original?: string;
+            language?: string;
+          }>("transcribe", "POST", {
             data,
             mime,
           });
           if (cancelled.current) return;
           setText(result.text);
+          setHeard({ language: result.language, original: result.original });
           setState("review");
           setError("");
         } catch (err) {
@@ -184,6 +193,10 @@ export function Voice({
       setState("idle");
     }
   }
+  const translated =
+    !!heard.language &&
+    !!heard.original &&
+    !/^english$/i.test(heard.language.trim());
   return (
     <Modal
       open={open}
@@ -197,13 +210,20 @@ export function Voice({
       }
       description={
         mode === "meal"
-          ? "Tell us which foods you ate and when. Review your words before sending. Audio goes to the configured AI provider for transcription; local audio is discarded. Entries are saved only after confirmation from your journey."
-          : "Speak naturally. Audio goes to the configured AI provider for transcription; this app discards its local recording. Review your words before sending."
+          ? "Say what you ate in Malayalam, Hindi, Tamil or English. We translate it into English and save that. Audio goes to the configured AI provider for transcription and is discarded locally. Entries are saved only after your journey confirms."
+          : "Speak naturally in Malayalam, Hindi, Tamil or English. We translate it into English for you to review before sending. This app discards its local recording."
       }
     >
       <div className="voice-view">
         {state === "review" ? (
           <>
+            {translated ? (
+              <p className="voice-translation" role="status">
+                <strong>Heard in {heard.language}.</strong> Showing the English
+                translation — edit it if anything is off.
+                <span className="heard-original">{heard.original}</span>
+              </p>
+            ) : null}
             <label className="full-width">
               {mode === "meal" ? "Foods you ate" : "Your words"}
               <textarea
@@ -271,6 +291,7 @@ export function Voice({
                   ? "“For lunch, rice and fish curry around noon.”"
                   : "“Find a pharmacy near me.”"}
               </span>
+              <span>“ഇന്ന് രാവിലെ ഇഡ്ഡലി കഴിച്ചു”</span>
             </div>
           </>
         )}
@@ -285,6 +306,7 @@ export function Voice({
                     recorder.current.stop();
                   cleanup();
                   setError("");
+                  setHeard({});
                   setState("review");
                 }
               : onClose

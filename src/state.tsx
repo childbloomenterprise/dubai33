@@ -37,6 +37,8 @@ type LincState = {
   signOut: () => Promise<void>;
   authOpen: boolean;
   setAuthOpen: (open: boolean) => void;
+  onboardingOpen: boolean;
+  setOnboardingOpen: (open: boolean) => void;
   completeRecovery: () => void;
 };
 const Context: ReactContext<LincState | null> =
@@ -53,6 +55,7 @@ export function LincProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [authReady, setReady] = useState(!supabase);
   const [authOpen, setAuthOpen] = useState(false);
+  const [onboardingOpen, setOnboardingOpen] = useState(false);
   const [recovery, setRecovery] = useState(
     window.location.pathname === "/auth",
   );
@@ -160,6 +163,8 @@ export function LincProvider({ children }: { children: ReactNode }) {
         },
         authOpen,
         setAuthOpen,
+        onboardingOpen,
+        setOnboardingOpen,
         completeRecovery: () => setRecovery(false),
       }}
     >

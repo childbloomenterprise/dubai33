@@ -23,12 +23,14 @@ export function Policies({ kind }: { kind: "privacy" | "terms" }) {
           <p>
             With external AI consent, travel messages and voice recordings go to
             the configured Google Gemini service for travel conversation,
-            transcription and factual extraction. Saved health profiles are
-            excluded from Gemini context. Health responses use curated general
-            information and reported records. Sensitive processing stays
-            disabled until the pilot administrator configures the provider
-            appropriately. Provider processing and retention follow its
-            applicable terms; the app cannot promise immediate deletion from
+            transcription, translation and factual extraction. Speech in
+            Malayalam, Hindi, Tamil, Kannada, Telugu or English is translated,
+            and only the English text is saved to your journey. Saved health
+            profiles are excluded from Gemini context. Health responses use
+            curated general information and reported records. Sensitive
+            processing stays disabled until the pilot administrator configures
+            the provider appropriately. Provider processing and retention follow
+            its applicable terms; the app cannot promise immediate deletion from
             provider systems.
           </p>
           <p>
@@ -57,12 +59,13 @@ export function Policies({ kind }: { kind: "privacy" | "terms" }) {
             invitation sender.
           </p>
           <p>
-            Raw audio is held temporarily in browser memory for transcription,
-            then released. No audio files or medical message contents are placed
-            in operational logs. App-shell caching excludes authenticated API
-            responses and health records. Authentication tokens may be stored by
-            Supabase in your browser to maintain your session; sign out on
-            shared devices.
+            Raw audio is held temporarily in browser memory for transcription
+            and translation, then released. Only the resulting English text is
+            saved; the recording itself is not retained. No audio files or
+            medical message contents are placed in operational logs. App-shell
+            caching excludes authenticated API responses and health records.
+            Authentication tokens may be stored by Supabase in your browser to
+            maintain your session; sign out on shared devices.
           </p>
           <h2>Contact and pilot review</h2>
           <p>

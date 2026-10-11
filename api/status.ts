@@ -12,6 +12,10 @@ export default function status(_req: VercelRequest, res: VercelResponse) {
       !!process.env.GEMINI_API_KEY &&
       process.env.GEMINI_SENSITIVE_PROCESSING_ENABLED === "true",
     nearby: !!process.env.GOOGLE_MAPS_SERVER_KEY,
+    // Truthful: nearby results are labelled samples, not provider data.
+    nearby_demo:
+      !process.env.GOOGLE_MAPS_SERVER_KEY &&
+      process.env.PLACES_DEMO_ENABLED === "true",
     account_deletion: !!process.env.SUPABASE_SECRET_KEY,
   });
 }

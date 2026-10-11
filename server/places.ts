@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { Place } from "../shared/contracts.js";
+import { demoDistance, demoPlacesFor } from "../shared/demoPlaces.js";
 import { ApiError } from "./http.js";
 
 export const nearbyInput = z
@@ -9,6 +10,7 @@ export const nearbyInput = z
       "clinics",
       "pharmacies",
       "restaurants",
+      "hotels",
       "petrol",
     ]),
     lat: z.coerce.number().min(-90).max(90).optional(),
@@ -24,6 +26,7 @@ const types = {
   clinics: "doctor",
   pharmacies: "pharmacy",
   restaurants: "restaurant",
+  hotels: "lodging",
   petrol: "gas_station",
 };
 export function distanceKm(
@@ -41,16 +44,36 @@ export function distanceKm(
 export function navigationURL(id: string, lat: number, lng: number) {
   return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(`${lat},${lng}`)}&destination_place_id=${encodeURIComponent(id)}`;
 }
+/**
+ * Labelled Munnar sample points, used only while no Places key is configured
+ * and the operator explicitly enabled the demonstration map. Each result is
+ * marked `demo`, so the interface can label it and no caller can mistake it for
+ * a real provider result.
+ */
+export function demoSearch(input: z.infer<typeof nearbyInput>): Place[] {
+  const origin =
+    input.lat !== undefined && input.lng !== undefined
+      ? { lat: input.lat, lng: input.lng }
+      : null;
+  return demoPlacesFor(input.category)
+    .map((place) => ({
+      ...place,
+      distance_km: demoDistance(origin, place),
+    }))
+    .sort((a, b) => (a.distance_km ?? Infinity) - (b.distance_km ?? Infinity));
+}
 export async function searchPlaces(
   input: z.infer<typeof nearbyInput>,
 ): Promise<Place[]> {
   const key = process.env.GOOGLE_MAPS_SERVER_KEY;
-  if (!key)
+  if (!key) {
+    if (process.env.PLACES_DEMO_ENABLED === "true") return demoSearch(input);
     throw new ApiError(
       503,
       "PLACES_UNAVAILABLE",
       "Nearby search is not connected yet. Emergency calling is still available.",
     );
+  }
   const nearby = input.lat !== undefined && input.lng !== undefined;
   const response = await fetch(
     `https://places.googleapis.com/v1/places:${nearby ? "searchNearby" : "searchText"}`,

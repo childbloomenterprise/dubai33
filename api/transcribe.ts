@@ -14,5 +14,11 @@ export default handler(["POST"], async (ctx) => {
     );
   allowSensitiveAI();
   await quota(ctx, "audio");
-  return { text: await transcribe(value.data, value.mime) };
+  // `text` is always English, whichever language was spoken.
+  const result = await transcribe(value.data, value.mime);
+  return {
+    text: result.text,
+    original: result.original,
+    language: result.language,
+  };
 });

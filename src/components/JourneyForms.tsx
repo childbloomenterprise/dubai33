@@ -1,9 +1,28 @@
-import { useEffect, useRef, useState } from "react";
-import { Compass, MapPin, Plus, Check } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { format } from "date-fns";
+import {
+  Compass,
+  MapPin,
+  Plus,
+  Check,
+  Zap,
+  Search,
+  ChevronDown,
+} from "lucide-react";
 import type { JourneyEvent, EventType } from "../../shared/contracts";
 import { eventDraft, journeyInput } from "../../shared/contracts";
+import {
+  mealPeriods,
+  mealSuggestions,
+  mealPeriodForHour,
+} from "../../shared/cuisine";
 import { useLinc } from "../state";
 import { Button, Modal, ErrorBox } from "./ui";
+import { DatePicker } from "./DatePicker";
+
+function today() {
+  return format(new Date(), "yyyy-MM-dd");
+}
 
 export function JourneyForm({
   open,
@@ -16,10 +35,13 @@ export function JourneyForm({
     useLinc();
   const [title, setTitle] = useState("");
   const [destination, setDestination] = useState("");
-  const [start, setStart] = useState(new Date().toISOString().slice(0, 10));
+  const [start, setStart] = useState(today());
   const [end, setEnd] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    if (open) setStart(today());
+  }, [open]);
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (!signedIn) {
@@ -42,6 +64,7 @@ export function JourneyForm({
       onClose();
       setTitle("");
       setDestination("");
+      setEnd("");
     } catch (err) {
       setError((err as Error).message);
     } finally {
@@ -80,22 +103,12 @@ export function JourneyForm({
         </label>
         <div className="form-grid">
           <label>
-            Starts
-            <input
-              type="date"
-              required
-              value={start}
-              onChange={(e) => setStart(e.target.value)}
-            />
+            Starts <span className="muted">(defaults to today)</span>
+            <DatePicker value={start} onChange={setStart} />
           </label>
           <label>
             Ends <span className="muted">(optional)</span>
-            <input
-              type="date"
-              value={end}
-              min={start}
-              onChange={(e) => setEnd(e.target.value)}
-            />
+            <DatePicker value={end} onChange={setEnd} min={start} />
           </label>
         </div>
         {activeJourney && (
@@ -113,6 +126,72 @@ export function JourneyForm({
     </Modal>
   );
 }
+
+/** South Indian meal picker: search + tap-to-log chips, grouped by meal period. */
+function MealPicker({
+  dietFilter,
+  busyLabel,
+  onPick,
+}: {
+  dietFilter?: string | null;
+  busyLabel: string | null;
+  onPick: (label: string) => void;
+}) {
+  const [search, setSearch] = useState("");
+  const vegOnly = dietFilter === "vegetarian" || dietFilter === "vegan";
+  const currentPeriod = mealPeriodForHour(new Date().getHours());
+  const filtered = mealSuggestions
+    .filter((s) => !vegOnly || s.diet === "vegetarian")
+    .filter((s) => s.label.toLowerCase().includes(search.trim().toLowerCase()));
+  const orderedPeriods = [
+    currentPeriod,
+    ...mealPeriods.filter((p) => p !== currentPeriod),
+  ];
+  return (
+    <div className="meal-picker">
+      <div className="input-icon meal-picker-search">
+        <Search size={16} />
+        <input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search idli, dosa, biryani…"
+          maxLength={60}
+        />
+      </div>
+      {orderedPeriods.map((period) => {
+        const options = filtered.filter((s) => s.period === period);
+        if (!options.length) return null;
+        return (
+          <div className="meal-suggestion-group" key={period}>
+            <small>
+              {period}
+              {period === currentPeriod ? " · right now" : ""}
+            </small>
+            <div className="chip-row">
+              {options.map((s) => (
+                <button
+                  type="button"
+                  className="chip"
+                  key={s.id}
+                  disabled={!!busyLabel}
+                  onClick={() => onPick(s.label)}
+                >
+                  {busyLabel === s.label ? "Saving…" : s.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        );
+      })}
+      {!filtered.length && (
+        <p className="muted small">
+          No dish matches “{search}”. Try another name, or describe it below.
+        </p>
+      )}
+    </div>
+  );
+}
+
 export function EventForm({
   open,
   onClose,
@@ -128,14 +207,18 @@ export function EventForm({
 }) {
   const { activeJourney, call, refresh, notify, profile } = useLinc();
   const requestId = useRef(crypto.randomUUID());
+  const [quickBusy, setQuickBusy] = useState<string | null>(null);
   const [type, setType] = useState<EventType>(initialType);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [time, setTime] = useState("");
-  const [when, setWhen] = useState("");
+  const [date, setDate] = useState(today());
+  const [clock, setClock] = useState("");
   const [amount, setAmount] = useState("");
+  const [moreOpen, setMoreOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const dietPreference = profile.signup?.dietary_preference;
   useEffect(() => {
     if (open) {
       requestId.current = crypto.randomUUID();
@@ -143,20 +226,53 @@ export function EventForm({
       setTitle(event?.title || "");
       setDescription(event?.description || "");
       setTime(event?.time_text || "");
-      setWhen(
-        event?.occurred_at
-          ? new Date(
-              new Date(event.occurred_at).getTime() -
-                new Date(event.occurred_at).getTimezoneOffset() * 60000,
-            )
-              .toISOString()
-              .slice(0, 16)
-          : "",
-      );
+      if (event?.occurred_at) {
+        const local = new Date(event.occurred_at);
+        setDate(format(local, "yyyy-MM-dd"));
+        setClock(format(local, "HH:mm"));
+      } else {
+        setDate(today());
+        setClock("");
+      }
       setAmount(String(event?.metadata_json.amount_ml || ""));
+      setMoreOpen(false);
       setError("");
     }
   }, [open, event, initialType]);
+  function occurredAt() {
+    const t = clock || format(new Date(), "HH:mm");
+    return new Date(`${date}T${t}:00`).toISOString();
+  }
+  async function quickLog(label: string) {
+    setQuickBusy(label);
+    setError("");
+    try {
+      const id = journeyId || activeJourney?.id;
+      if (!id) throw new Error("Start a journey before saving an entry.");
+      if (!profile.consents.sensitive_storage)
+        throw new Error(
+          "Enable private storage in Profile before saving entries.",
+        );
+      const draft = eventDraft.parse({
+        event_type: "meal",
+        title: label,
+        occurred_at: occurredAt(),
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      });
+      await call("events", "POST", {
+        request_id: crypto.randomUUID(),
+        journey_id: id,
+        event: draft,
+      });
+      await refresh();
+      notify(`${label} added to your journey.`);
+      onClose();
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setQuickBusy(null);
+    }
+  }
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);
@@ -172,7 +288,7 @@ export function EventForm({
         event_type: type,
         title,
         description: description || null,
-        occurred_at: when ? new Date(when).toISOString() : null,
+        occurred_at: occurredAt(),
         time_text: time || null,
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         location_name: event?.location_name || null,
@@ -194,81 +310,126 @@ export function EventForm({
       setBusy(false);
     }
   }
+  const isMeal = type === "meal";
+  const typeLabels: Record<EventType, string> = useMemo(
+    () => ({
+      meal: "Meal",
+      symptom: "Symptom",
+      activity: "Activity",
+      medication_report: "Medication report",
+      hydration: "Hydration",
+      note: "Note",
+    }),
+    [],
+  );
   return (
     <Modal
       open={open}
       onOpenChange={(v) => !v && onClose()}
       title={event ? "A little correction" : "Add a little moment"}
-      description="Save what happened, in your own words. Leave uncertain times blank."
+      description="Save what happened — pick a dish, pick a date, done."
     >
       <form className="form-stack" onSubmit={submit}>
+        <div className="entry-type-row">
+          {(Object.keys(typeLabels) as EventType[]).map((t) => (
+            <button
+              type="button"
+              key={t}
+              className={`chip ${type === t ? "chip-active" : ""}`}
+              onClick={() => setType(t)}
+            >
+              {typeLabels[t]}
+            </button>
+          ))}
+        </div>
+        {!event && isMeal && (
+          <>
+            <span className="muted small">
+              <Zap size={13} />
+              Tap a dish to log it instantly
+            </span>
+            <MealPicker
+              dietFilter={dietPreference}
+              busyLabel={quickBusy}
+              onPick={(label) => void quickLog(label)}
+            />
+            <span className="muted small">Not listed? Describe it below.</span>
+          </>
+        )}
         <label>
-          Entry type
-          <select
-            value={type}
-            onChange={(e) => setType(e.target.value as EventType)}
-          >
-            <option value="meal">Meal</option>
-            <option value="symptom">Symptom</option>
-            <option value="activity">Activity</option>
-            <option value="medication_report">Medication report</option>
-            <option value="hydration">Hydration</option>
-            <option value="note">Note</option>
-          </select>
-        </label>
-        <label>
-          What happened?
+          {isMeal ? "Or describe the dish" : "What happened?"}
           <input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             maxLength={160}
             required
             placeholder={
-              type === "meal"
-                ? "Appam for breakfast"
-                : "A moment worth remembering"
+              isMeal ? "Appam for breakfast" : "A moment worth remembering"
             }
           />
         </label>
         <label>
-          Details <span className="muted">(optional)</span>
-          <textarea
-            rows={3}
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            maxLength={2000}
-          />
+          When
+          <DatePicker value={date} onChange={setDate} />
         </label>
-        <div className="form-grid">
-          <label>
-            Known date & time
-            <input
-              type="datetime-local"
-              value={when}
-              onChange={(e) => setWhen(e.target.value)}
-            />
-          </label>
-          <label>
-            Or approximate time
-            <input
-              value={time}
-              onChange={(e) => setTime(e.target.value)}
-              placeholder="Around lunchtime"
-              maxLength={160}
-            />
-          </label>
-        </div>
-        {type === "hydration" && (
-          <label>
-            Amount in ml <span className="muted">(optional)</span>
-            <input
-              type="number"
-              min="1"
-              max="20000"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-            />
-          </label>
+        <button
+          type="button"
+          className="more-details-toggle"
+          onClick={() => setMoreOpen((v) => !v)}
+          aria-expanded={moreOpen}
+        >
+          <ChevronDown
+            size={16}
+            style={{
+              transform: moreOpen ? "rotate(180deg)" : "none",
+              transition: "transform 0.15s",
+            }}
+          />
+          More details <span className="muted small">(optional)</span>
+        </button>
+        {moreOpen && (
+          <div className="more-details">
+            <label>
+              Details <span className="muted">(optional)</span>
+              <textarea
+                rows={3}
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                maxLength={2000}
+              />
+            </label>
+            <div className="form-grid">
+              <label>
+                Exact time <span className="muted">(optional)</span>
+                <input
+                  type="time"
+                  value={clock}
+                  onChange={(e) => setClock(e.target.value)}
+                />
+              </label>
+              <label>
+                Or approximate time
+                <input
+                  value={time}
+                  onChange={(e) => setTime(e.target.value)}
+                  placeholder="Around lunchtime"
+                  maxLength={160}
+                />
+              </label>
+            </div>
+            {type === "hydration" && (
+              <label>
+                Amount in ml <span className="muted">(optional)</span>
+                <input
+                  type="number"
+                  min="1"
+                  max="20000"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                />
+              </label>
+            )}
+          </div>
         )}
         {error && <ErrorBox message={error} />}
         <Button loading={busy} type="submit">

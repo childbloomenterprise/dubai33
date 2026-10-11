@@ -20,14 +20,18 @@ for (const path of [
   "/api/chat",
   "/api/transcribe",
   "/api/privacy",
+  "/api/onboarding",
 ]) {
   const response = await fetch(new URL(path, base));
   const body = response.headers.get("content-type")?.includes("json")
     ? await response.json()
     : undefined;
-  const expected = ["/api/chat", "/api/transcribe", "/api/privacy"].includes(
-    path,
-  )
+  const expected = [
+    "/api/chat",
+    "/api/transcribe",
+    "/api/privacy",
+    "/api/onboarding",
+  ].includes(path)
     ? 405
     : path.startsWith("/api/") && path !== "/api/status"
       ? 401
@@ -43,7 +47,12 @@ for (const path of [
     body,
   });
 }
-for (const path of ["/api/chat", "/api/transcribe", "/api/privacy"]) {
+for (const path of [
+  "/api/chat",
+  "/api/transcribe",
+  "/api/privacy",
+  "/api/onboarding",
+]) {
   const response = await fetch(new URL(path, base), {
     method: "POST",
     headers: { "Content-Type": "application/json" },

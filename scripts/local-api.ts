@@ -12,6 +12,7 @@ const routes = [
   "conversations",
   "privacy",
   "status",
+  "onboarding",
 ];
 createServer(async (req, res) => {
   const url = new URL(req.url || "/", "http://localhost:3001");

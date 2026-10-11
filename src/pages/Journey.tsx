@@ -19,6 +19,7 @@ import {
 import type { JourneyEvent, EventType } from "../../shared/contracts";
 import { useLinc } from "../state";
 import { Button, Empty, ErrorBox, Modal } from "../components/ui";
+import { DestinationBackdrop } from "../components/DestinationBackdrop";
 const icons = {
   meal: Utensils,
   symptom: HeartPulse,
@@ -87,9 +88,10 @@ export function JourneyPage({
     );
   const grouped = entries.reduce<Record<string, JourneyEvent[]>>(
     (groups, e) => {
-      const day = e.occurred_at
-        ? format(new Date(e.occurred_at), "EEEE, MMMM d")
-        : "Time not specified";
+      const day = format(
+        new Date(e.occurred_at || e.created_at),
+        "EEEE, MMMM d",
+      );
       (groups[day] ||= []).push(e);
       return groups;
     },
@@ -209,6 +211,20 @@ export function JourneyPage({
               ))}
             </aside>
             <section className="panel timeline-panel">
+              <div className="journey-cover">
+                <DestinationBackdrop destination={journey.destination_name} />
+                <div className="journey-cover-copy">
+                  <span>
+                    {journey.status === "active"
+                      ? "CURRENT JOURNEY"
+                      : "SAVED JOURNEY"}
+                  </span>
+                  <strong>{journey.destination_name}</strong>
+                  <small>
+                    {format(new Date(journey.started_at), "MMM d, yyyy")}
+                  </small>
+                </div>
+              </div>
               <div className="timeline-header">
                 <div>
                   <span className="eyebrow">
