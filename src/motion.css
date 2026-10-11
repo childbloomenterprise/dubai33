@@ -1,0 +1,88 @@
+/* Short, compositor-friendly motion; no delays on input or navigation. */
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+  .page,
+  .chat-page {
+    animation: linc-arrive 240ms ease-out;
+  }
+  .message-row,
+  .cuisine-card {
+    animation: linc-arrive 180ms ease-out;
+  }
+  .modal-card {
+    animation: linc-dialog 200ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  .modal-overlay {
+    animation: linc-fade 160ms ease-out;
+  }
+  :is(button, .nav-link, .text-link) {
+    transition:
+      transform 160ms ease-out,
+      background-color 180ms ease-out,
+      color 180ms ease-out,
+      box-shadow 180ms ease-out;
+  }
+  :is(input, textarea, select) {
+    transition:
+      border-color 160ms ease-out,
+      box-shadow 160ms ease-out;
+  }
+  .cuisine-card {
+    transition: box-shadow 180ms ease-out;
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .cuisine-card:hover {
+      box-shadow: 0 8px 24px rgba(25, 61, 93, 0.09);
+    }
+    :is(.quick-action, .nav-link):hover {
+      transform: translateY(-2px);
+    }
+  }
+}
+@keyframes linc-arrive {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes linc-dialog {
+  from {
+    opacity: 0;
+    translate: 0 8px;
+    scale: 0.99;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+    scale: 1;
+  }
+}
+@keyframes linc-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+  button:active:not(:disabled) {
+    transform: none;
+  }
+}

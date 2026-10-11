@@ -10,6 +10,7 @@ import "@fontsource/inter/latin-600.css";
 import "@fontsource/inter/latin-700.css";
 import "./styles.css";
 import "./apple.css";
+import "./motion.css";
 const client = new QueryClient({
   defaultOptions: {
     queries: { staleTime: 30000, refetchOnWindowFocus: false, retry: false },
