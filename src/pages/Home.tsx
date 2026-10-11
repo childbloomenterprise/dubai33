@@ -29,6 +29,7 @@ import { eventDraft } from "../../shared/contracts";
 import { Button, ErrorBox } from "../components/ui";
 import { isHealthText, screenSafety } from "../../shared/safety";
 import { DestinationBackdrop } from "../components/DestinationBackdrop";
+import { CuisineExplorer } from "../components/CuisineExplorer";
 export function Home({
   onNew,
   onVoice,
@@ -593,6 +594,9 @@ export function Home({
           </div>
         )}
       </section>
+      <CuisineExplorer
+        destination={activeJourney?.destination_name || "Munnar, Kerala"}
+      />
       <div className="public-policy-links">
         <Link to="/privacy">Privacy notice</Link>
         <Link to="/terms">Terms of use</Link>
