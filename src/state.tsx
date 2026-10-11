@@ -4,6 +4,7 @@ import {
   useEffect,
   useState,
   useCallback,
+  useRef,
   type ReactNode,
   type Context as ReactContext,
 } from "react";
@@ -61,6 +62,7 @@ export function LincProvider({ children }: { children: ReactNode }) {
   );
   const [notice, setNotice] = useState<string | null>(null);
   const queryClient = useQueryClient();
+  const onboardingPromptedRef = useRef(false);
   useEffect(() => {
     if (!supabase) return;
     supabase.auth
@@ -85,7 +87,10 @@ export function LincProvider({ children }: { children: ReactNode }) {
         setRecovery(true);
         setAuthOpen(true);
       }
-      if (event === "SIGNED_OUT") queryClient.clear();
+      if (event === "SIGNED_OUT") {
+        queryClient.clear();
+        onboardingPromptedRef.current = false;
+      }
     });
     return () => subscription.unsubscribe();
   }, [queryClient]);
@@ -134,6 +139,14 @@ export function LincProvider({ children }: { children: ReactNode }) {
     enabled: enabled && !!activeJourney,
     retry: false,
   });
+  useEffect(() => {
+    if (!session || isPreview || recovery) return;
+    if (!profile.data || onboardingPromptedRef.current) return;
+    if (!profile.data.signup?.onboarded) {
+      onboardingPromptedRef.current = true;
+      setOnboardingOpen(true);
+    }
+  }, [session, profile.data, recovery]);
   const refresh = async () => {
     await queryClient.invalidateQueries();
   };
