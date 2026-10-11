@@ -111,6 +111,7 @@ describe("voice/provider boundaries", () => {
     await expect(
       extractAndReply("Hello", {
         destination: null,
+        journey: null,
         timezone: "Asia/Kolkata",
         now: new Date().toISOString(),
         recent: [],

@@ -127,15 +127,40 @@ async function processWithStorage(
     if (sensitive) allowSensitiveAI();
     await quota(ctx, "ai");
     let destination: string | null = null;
+    let journey: {
+      title: string;
+      started_at: string;
+      ended_at: string | null;
+    } | null = null;
+    let recent: unknown[] = [];
     if (input.journey_id) {
       const { data, error } = await ctx.db
         .from("journeys")
-        .select("destination_name")
+        .select("title,destination_name,started_at,ended_at")
         .eq("id", input.journey_id)
         .eq("user_id", ctx.user.id)
         .single();
       dbCheck(error);
       destination = data?.destination_name || null;
+      journey = data
+        ? {
+            title: data.title,
+            started_at: data.started_at,
+            ended_at: data.ended_at,
+          }
+        : null;
+      // Only non-sensitive event types travel to the external AI as journey context.
+      const { data: events, error: eventsError } = await ctx.db
+        .from("journey_events")
+        .select("event_type,title,time_text,occurred_at")
+        .eq("user_id", ctx.user.id)
+        .eq("journey_id", input.journey_id)
+        .in("event_type", ["meal", "activity", "hydration", "note"])
+        .order("occurred_at", { ascending: false, nullsFirst: false })
+        .order("created_at", { ascending: false })
+        .limit(12);
+      dbCheck(eventsError);
+      recent = events || [];
     }
     let messages: unknown[] = [];
     if (input.conversation_id) {
@@ -154,9 +179,10 @@ async function processWithStorage(
     }
     const ai = await extractAndReply(input.text, {
       destination,
+      journey,
       timezone: input.timezone,
       now: new Date().toISOString(),
-      recent: [],
+      recent,
       messages,
     });
     result =

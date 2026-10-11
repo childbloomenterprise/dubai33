@@ -47,6 +47,7 @@ function context(
         "select",
         "eq",
         "is",
+        "in",
         "limit",
         "order",
         "or",
@@ -77,7 +78,13 @@ function context(
               : table === "journeys"
                 ? options.owns === false
                   ? null
-                  : { id: journey, destination_name: "Munnar" }
+                  : {
+                      id: journey,
+                      title: "Kerala trip",
+                      destination_name: "Munnar",
+                      started_at: "2020-01-01T00:00:00Z",
+                      ended_at: null,
+                    }
                 : table === "conversations"
                   ? { id: "conversation" }
                   : [];

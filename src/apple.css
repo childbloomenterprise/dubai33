@@ -4,9 +4,9 @@
     -apple-system, BlinkMacSystemFont, "SF Pro Text", Inter, "Segoe UI",
     sans-serif;
   color: #0a1730;
-  background: #f4f9fd;
-  --background: #f4f9fd;
-  --surface: rgba(255, 255, 255, 0.78);
+  background: #ffffff;
+  --background: #ffffff;
+  --surface: rgba(255, 255, 255, 0.92);
   --surface-elevated: #ffffff;
   --primary: #0a84ff;
   --accent: #19b69d;
@@ -19,11 +19,11 @@
 }
 
 html {
-  background: #f4f9fd;
+  background: #ffffff;
 }
 body {
   color: var(--text);
-  background: #f4f9fd;
+  background: #ffffff;
   overflow-x: hidden;
 }
 button {
@@ -47,9 +47,17 @@ input::placeholder,
 textarea::placeholder {
   color: #8a98aa;
 }
+.input-icon {
+  background: #ffffff;
+  border-color: rgba(27, 70, 108, 0.16);
+  color: #69798e;
+}
+.input-icon input {
+  color: #0a1730;
+}
 
 .app-shell {
-  background: #f4f9fd;
+  background: #ffffff;
 }
 .app-main {
   min-width: 0;
