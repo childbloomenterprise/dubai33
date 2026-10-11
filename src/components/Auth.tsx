@@ -297,7 +297,7 @@ export function Auth() {
                   mode === "recovery"
                     ? "login"
                     : mode === "login"
-                      ? "signup"
+                      ? "recovery"
                       : "login",
                 )
               }
