@@ -12,6 +12,7 @@ import {
   parseISO,
   startOfMonth,
   startOfWeek,
+  subDays,
   subMonths,
 } from "date-fns";
 import { CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
@@ -147,13 +148,22 @@ export function DatePicker({
               );
             })}
           </div>
-          <button
-            type="button"
-            className="date-picker-today"
-            onClick={() => pick(new Date())}
-          >
-            Today
-          </button>
+          <div className="date-picker-shortcuts">
+            <button
+              type="button"
+              className="date-picker-today"
+              onClick={() => pick(subDays(new Date(), 1))}
+            >
+              Yesterday
+            </button>
+            <button
+              type="button"
+              className="date-picker-today"
+              onClick={() => pick(new Date())}
+            >
+              Today
+            </button>
+          </div>
         </div>
       )}
     </div>

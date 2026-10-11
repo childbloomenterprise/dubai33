@@ -1415,7 +1415,7 @@ button.button-danger {
   flex-wrap: wrap;
   gap: 10px;
 }
-.chip {
+.chip-grid .chip {
   display: inline-flex;
   gap: 6px;
   align-items: center;
@@ -1432,10 +1432,10 @@ button.button-danger {
     border-color 160ms ease,
     color 160ms ease;
 }
-.chip:hover {
+.chip-grid .chip:hover {
   background: #eaf3fb;
 }
-.chip.selected {
+.chip-grid .chip.selected {
   color: #fff;
   background: #0a84ff;
   border-color: #0a84ff;

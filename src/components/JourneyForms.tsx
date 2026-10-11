@@ -8,6 +8,12 @@ import {
   Zap,
   Search,
   ChevronDown,
+  Utensils,
+  HeartPulse,
+  Footprints,
+  Pill,
+  Droplets,
+  StickyNote,
 } from "lucide-react";
 import type { JourneyEvent, EventType } from "../../shared/contracts";
 import { eventDraft, journeyInput } from "../../shared/contracts";
@@ -311,6 +317,14 @@ export function EventForm({
     }
   }
   const isMeal = type === "meal";
+  const typeIcons: Record<EventType, typeof Utensils> = {
+    meal: Utensils,
+    symptom: HeartPulse,
+    activity: Footprints,
+    medication_report: Pill,
+    hydration: Droplets,
+    note: StickyNote,
+  };
   const typeLabels: Record<EventType, string> = useMemo(
     () => ({
       meal: "Meal",
@@ -331,16 +345,20 @@ export function EventForm({
     >
       <form className="form-stack" onSubmit={submit}>
         <div className="entry-type-row">
-          {(Object.keys(typeLabels) as EventType[]).map((t) => (
-            <button
-              type="button"
-              key={t}
-              className={`chip ${type === t ? "chip-active" : ""}`}
-              onClick={() => setType(t)}
-            >
-              {typeLabels[t]}
-            </button>
-          ))}
+          {(Object.keys(typeLabels) as EventType[]).map((t) => {
+            const Icon = typeIcons[t];
+            return (
+              <button
+                type="button"
+                key={t}
+                className={`chip ${type === t ? "chip-active" : ""}`}
+                onClick={() => setType(t)}
+              >
+                <Icon size={14} />
+                {typeLabels[t]}
+              </button>
+            );
+          })}
         </div>
         {!event && isMeal && (
           <>

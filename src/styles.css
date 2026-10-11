@@ -1324,6 +1324,14 @@ small,
   gap: 7px;
   flex-wrap: wrap;
 }
+.entry-type-row .chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.more-details {
+  animation: fadeIn 0.15s;
+}
 .chip-active {
   background: #82cff0 !important;
   color: #163a50 !important;
@@ -1473,9 +1481,14 @@ small,
 .date-picker-day:disabled {
   opacity: 0.35;
 }
+.date-picker-shortcuts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 10px;
+}
 .date-picker-today {
   width: 100%;
-  margin-top: 10px;
   border: 1px solid #40566c;
   border-radius: 8px;
   background: transparent;
